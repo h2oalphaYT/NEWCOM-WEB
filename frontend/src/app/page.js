@@ -1,17 +1,39 @@
 import Link from "next/link";
+import BrandMarquee from "@/components/BrandMarquee";
 import HeroVideo from "@/components/HeroVideo";
 import PcScene from "@/components/PcScene";
+import ProductArt from "@/components/ProductArt";
 import ProductCard from "@/components/ProductCard";
-import { bestSellers, byIds, categories, categoryHref, extraCategories, newArrivals } from "@/lib/catalog";
+import Reviews from "@/components/Reviews";
+import { bestSellers, byIds, categoryHref, extraCategories, newArrivals } from "@/lib/catalog";
 import { site } from "@/lib/site";
 
 const check = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7" /></svg>;
 
-const strip = [
-  { t: "Island-wide delivery", s: "Fast shipping nationwide", d: "M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 19a1.5 1.5 0 1 0 .01 0M18.5 19a1.5 1.5 0 1 0 .01 0" },
-  { t: "Manufacturer warranty", s: "All products fully covered", d: "M12 2 4 5v6c0 5 3.4 9 8 11 4.6-2 8-6 8-11V5z" },
-  { t: "Secure payments", s: "Pay with confidence", d: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4" },
-  { t: "Product guidance", s: `WhatsApp ${site.whatsapp}`, d: "M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.2A8 8 0 1 1 21 12z" },
+// thin duotone glyphs for the trust ribbon (filled shape + hairline outline)
+const glyph = {
+  truck: <><path className="g-fill" d="M3 7h11v9H3z" /><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19.5a1.8 1.8 0 1 0 0-.01M17.5 19.5a1.8 1.8 0 1 0 0-.01" /></>,
+  shield: <><path className="g-fill" d="M12 3 5 6v5c0 4.4 3 8.2 7 9.5 4-1.3 7-5.1 7-9.5V6z" /><path d="M12 3 5 6v5c0 4.4 3 8.2 7 9.5 4-1.3 7-5.1 7-9.5V6zM9 12l2.2 2.2L15.5 10" /></>,
+  card: <><path className="g-fill" d="M3 6h18v4H3z" /><path d="M3 6h18v12H3zM3 10h18M7 15h4" /></>,
+  chat: <><path className="g-fill" d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.5A7.5 7.5 0 1 1 20 11.5z" /><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.5A7.5 7.5 0 1 1 20 11.5zM9 11.5h.01M12.5 11.5h.01M16 11.5h.01" /></>,
+};
+
+const trust = [
+  { g: "truck", t: "Island-wide delivery", s: "Fast, tracked shipping to every district.", hue: "red" },
+  { g: "shield", t: "Manufacturer warranty", s: "Every product fully covered, claims handled by us.", hue: "violet" },
+  { g: "card", t: "Secure payments", s: "Card, bank transfer, KOKO and Mintpay instalments.", hue: "blue" },
+  { g: "chat", t: "Expert guidance", s: `Talk to a technician on WhatsApp ${site.whatsapp}.`, hue: "green" },
+];
+
+// category bento: size + art + colour per tile
+const bento = [
+  { n: "Graphics cards", s: "GeForce RTX and Radeon RX", kind: "gpu", accent: "#FF3B3B", cls: "b-xl c-red", tag: "Most popular" },
+  { n: "Laptops", s: "Gaming, creator and business", kind: "laptop", accent: "#8B5CF6", cls: "b-tall c-violet" },
+  { n: "Processors", s: "Intel Core and AMD Ryzen", kind: "cpu", accent: "#F97316", cls: "c-amber" },
+  { n: "Monitors", s: "High refresh and colour accurate", kind: "monitor", accent: "#22D3EE", cls: "c-cyan" },
+  { n: "Memory and storage", s: "DDR5, NVMe and SSD", kind: "ram", accent: "#3B82F6", cls: "c-blue" },
+  { n: "Desktop PCs", s: "Ready builds and workstations", kind: "case", accent: "#E31E24", cls: "b-wide c-ink" },
+  { n: "Peripherals", s: "Keyboards, mice and headsets", kind: "headset", accent: "#10B981", cls: "c-green" },
 ];
 
 const paths = [
@@ -22,27 +44,23 @@ const paths = [
 ];
 
 const checks = ["CPU and motherboard socket match", "Memory generation (DDR4 / DDR5) match", "Estimated power draw against PSU wattage", "GPU length against case clearance"];
-const brands = ["ASUS", "MSI", "GIGABYTE", "AMD", "INTEL", "NVIDIA", "CORSAIR", "LOGITECH", "KINGSTON", "SAMSUNG"];
-const why = [
-  { t: "Warranty assistance", s: "[Describe the real warranty process and how to claim.]" },
-  { t: "Genuine products", s: "[State authorised-dealer status only if verified.]" },
-  { t: "Delivery", s: "[State real coverage, fees and timelines.]" },
-  { t: "After-sales service", s: "[Describe repairs, upgrades and support channels.]" },
-];
 const guides = [
-  { c: "GPU", t: "How to choose a graphics card for your monitor" },
-  { c: "Upgrades", t: "RAM and SSD upgrades: what fits your PC" },
-  { c: "Building", t: "Gaming PC compatibility checklist" },
+  { c: "GPU", t: "How to choose a graphics card for your monitor", kind: "gpu", accent: "#FF3B3B" },
+  { c: "Upgrades", t: "RAM and SSD upgrades: what fits your PC", kind: "ssd", accent: "#3B82F6" },
+  { c: "Building", t: "Gaming PC compatibility checklist", kind: "case", accent: "#8B5CF6" },
 ];
 
-function SectionHead({ title, sub, href, link }) {
+const Arrow = () => <span className="cta-ico" aria-hidden="true">→</span>;
+
+function SectionHead({ eyebrow, title, accent, sub, href, link }) {
   return (
     <div className="sec-head">
       <div>
-        <h2 className="h2">{title}</h2>
+        {eyebrow && <span className="pill-eyebrow">{eyebrow}</span>}
+        <h2 className="h2">{title} {accent && <span className="grad">{accent}</span>}</h2>
         {sub && <p className="sub">{sub}</p>}
       </div>
-      {href && <Link className="lk" href={href}>{link} →</Link>}
+      {href && <Link className="cta cta-ghost" href={href}>{link}<Arrow /></Link>}
     </div>
   );
 }
@@ -71,66 +89,88 @@ export default function Home() {
         <div className="cue" aria-hidden="true"><span /></div>
       </section>
 
-      <section className="strip">
-        <div className="strip-in">
-          {strip.map((s) => (
-            <div key={s.t} className="strip-item">
-              <span className="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={s.d} /></svg></span>
-              <span><strong>{s.t}</strong><span>{s.s}</span></span>
-            </div>
-          ))}
-        </div>
+      {/* trust ribbon floats over the bottom edge of the hero */}
+      <section className="trust" aria-label="Why buy from Newcom">
+        {trust.map((x, i) => (
+          <div key={x.t} className={`trust-card t-${x.hue} rvs`} style={{ animationDelay: `${i * 0.06}s` }}>
+            <span className="trust-orb"><svg viewBox="0 0 24 24" aria-hidden="true">{glyph[x.g]}</svg></span>
+            <strong>{x.t}</strong>
+            <span>{x.s}</span>
+          </div>
+        ))}
       </section>
 
-      <section className="sec" style={{ paddingTop: 88 }}>
-        <SectionHead title="Shop by category" href="/products" link="All categories" />
-        <div className="cats">
-          {categories.map((c) => (
-            <Link key={c.n} className="cat rvs cat-tile" href={categoryHref(c.n)}>
-              <span className="ico-lg"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={c.d} /></svg></span>
-              <span><strong>{c.n}</strong><span>{c.s}</span></span>
+      <section className="sec">
+        <SectionHead eyebrow="Shop by category" title="Everything for your setup," accent="in one place." href="/products" link="All products" />
+        <div className="bento">
+          {bento.map((c) => (
+            <Link key={c.n} href={categoryHref(c.n)} className={`bento-tile ${c.cls} rvs`}>
+              <span className="bento-glow" aria-hidden="true" />
+              <span className="bento-art" aria-hidden="true"><ProductArt kind={c.kind} accent={c.accent} /></span>
+              <span className="bento-txt">
+                {c.tag && <em>{c.tag}</em>}
+                <strong>{c.n}</strong>
+                <span>{c.s}</span>
+              </span>
+              <span className="bento-go" aria-hidden="true">→</span>
             </Link>
           ))}
+          <Link href="/pre-owned" className="bento-tile c-used rvs">
+            <span className="bento-glow" aria-hidden="true" />
+            <span className="bento-txt"><em>Tested + warranty</em><strong>Certified pre-owned</strong><span>Save on laptops, GPUs and workstations</span></span>
+            <span className="bento-go" aria-hidden="true">→</span>
+          </Link>
         </div>
-      </section>
-
-      <section className="sec" style={{ paddingTop: 40 }}>
-        <div className="extra-cats">
+        <div className="mini-cats">
           {extraCategories.map((c) => (
-            <Link key={c.n} className="cat rvs extra-cat" href={categoryHref(c.n)}><strong>{c.n}</strong><span>{c.s}</span></Link>
+            <Link key={c.n} className="mini-cat" href={categoryHref(c.n)}><strong>{c.n}</strong><span>{c.s}</span></Link>
           ))}
-          <Link className="cat rvs extra-cat used" href="/pre-owned"><strong>Certified pre-owned</strong><span>Tested, with warranty</span></Link>
         </div>
       </section>
 
       <section className="sec">
-        <SectionHead title="Best sellers" sub="Sample products and prices for demonstration. Connect the live catalogue to populate." href="/products" link="View all" />
+        <SectionHead eyebrow="Best sellers" title="What Sri Lanka is" accent="building with." sub="Sample products and prices until the live catalogue is connected." href="/products" link="View all" />
         <div className="pgrid">{byIds(bestSellers).map((p) => <ProductCard key={p.id} p={p} />)}</div>
       </section>
 
-      <section className="sec promos">
-        <div className="rvl promo promo-dark">
-          <span className="eyebrow" style={{ color: "#FF6B70" }}>Gaming performance</span>
-          <h2>Build around the graphics card that fits your screen.</h2>
-          <p>Start with the GPU, then let the builder check CPU, board, memory and power supply against it.</p>
-          <Link className="btn btn-white" href="/pc-builder">Start a build</Link>
-        </div>
-        <div className="rvr promo promo-tint">
-          <span className="eyebrow">Upgrades</span>
-          <h2>Faster storage and more memory for the PC you own.</h2>
-          <p>Browse SSDs and RAM with filters for interface, capacity and generation.</p>
-          <Link className="btn btn-primary" href={categoryHref("Memory and storage")}>Shop upgrades</Link>
-        </div>
+      <section className="sec showcase">
+        <Link href="/pc-builder" className="show show-gpu rvl">
+          <span className="show-grid" aria-hidden="true" />
+          <span className="show-glow" aria-hidden="true" />
+          <div className="show-txt">
+            <span className="pill-eyebrow dark">Gaming performance</span>
+            <h2>Build around the GPU <span className="grad">that fits your screen.</span></h2>
+            <p>Pick the graphics card first. The builder checks CPU, board, memory and power against it, and fits every part in 3D.</p>
+            <div className="chipset"><span>GeForce RTX 40</span><span>Radeon RX 7000</span><span>Ray tracing</span><span>DLSS / FSR</span></div>
+            <span className="cta cta-light">Start a build<Arrow /></span>
+          </div>
+          <div className="show-art float" aria-hidden="true"><ProductArt kind="gpu" accent="#FF3B3B" /></div>
+        </Link>
+        <Link href={categoryHref("Memory and storage")} className="show show-sto rvr">
+          <span className="show-grid" aria-hidden="true" />
+          <span className="show-glow" aria-hidden="true" />
+          <div className="show-txt">
+            <span className="pill-eyebrow dark">Upgrades</span>
+            <h2>Faster storage. <span className="grad cool">More memory.</span></h2>
+            <p>NVMe drives and DDR5 kits for the PC you already own, filtered by interface, capacity and generation.</p>
+            <div className="chipset"><span>NVMe Gen4</span><span>DDR5</span><span>DDR4</span><span>Up to 4TB</span></div>
+            <span className="cta cta-light">Shop upgrades<Arrow /></span>
+          </div>
+          <div className="show-art stack" aria-hidden="true">
+            <span className="float"><ProductArt kind="ram" accent="#3B82F6" /></span>
+            <span className="float d2"><ProductArt kind="ssd" accent="#22D3EE" /></span>
+          </div>
+        </Link>
       </section>
 
       <section className="sec">
-        <SectionHead title="New arrivals" sub="Driven by the “date added” field in the live catalogue. Sample items shown." />
+        <SectionHead eyebrow="New arrivals" title="Just landed" accent="at Newcom." sub="Driven by the date-added field in the live catalogue. Sample items shown." />
         <div className="pgrid">{byIds(newArrivals).map((p) => <ProductCard key={p.id} p={p} />)}</div>
       </section>
 
       <section className="paths-wrap">
         <div className="sec" style={{ paddingTop: 80, paddingBottom: 80 }}>
-          <h2 className="h2">Hardware for the way you work</h2>
+          <SectionHead eyebrow="Shop by need" title="Hardware for" accent="the way you work." />
           <div className="paths">
             {paths.map((u) => (
               <Link key={u.n} className="cat rv path" href={categoryHref(u.c)}>
@@ -149,11 +189,12 @@ export default function Home() {
       <section className="sec">
         <div className="rv builder-cta">
           <div style={{ flex: "1 1 380px", minWidth: 0 }}>
-            <h2 className="h2" style={{ lineHeight: 1.1 }}>Build your PC with a compatibility check.</h2>
+            <span className="pill-eyebrow">PC builder</span>
+            <h2 className="h2" style={{ lineHeight: 1.1 }}>Build your PC with a <span className="grad">compatibility check.</span></h2>
             <p className="sub" style={{ marginTop: 16, lineHeight: 1.65, maxWidth: 460 }}>Pick parts by category and see CPU socket, memory generation, power draw and case clearance validated as you go. Where data is missing, we say so.</p>
             <div style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}>
-              <Link className="btn btn-primary btn-lg" href="/pc-builder">Open the builder</Link>
-              <Link className="btn btn-lg" href="/pc-builder">Request a quotation</Link>
+              <Link className="cta" href="/pc-builder">Open the builder<Arrow /></Link>
+              <Link className="cta cta-ghost" href="/pc-builder">Request a quotation<Arrow /></Link>
             </div>
           </div>
           <ul className="ticks">
@@ -164,36 +205,16 @@ export default function Home() {
         </div>
       </section>
 
-      <section aria-label="Brands" className="brands">
-        <div className="mq">
-          {brands.map((b) => <span key={b}>{b}</span>)}
-          {brands.map((b) => <span key={`d-${b}`} aria-hidden="true">{b}</span>)}
-        </div>
-      </section>
+      <BrandMarquee />
 
-      <section className="sec two-col">
-        <div>
-          <h2 className="h2">Why shop with Newcom</h2>
-          <p className="sub" style={{ fontSize: 14 }}>Each point below needs confirmation from Newcom before launch.</p>
-          <div style={{ marginTop: 24, display: "grid", gap: 12 }}>
-            {why.map((w) => <div key={w.t} className="why"><strong>{w.t}</strong><span>{w.s}</span></div>)}
-          </div>
-        </div>
-        <div>
-          <h2 className="h2">Customer reviews</h2>
-          <div className="empty" style={{ marginTop: 24 }}>
-            <strong>No verified reviews connected yet</strong>
-            <p>Link the Google reviews feed here to show real ratings, reviewer names and a link to the original source. Invented testimonials are never shown.</p>
-          </div>
-        </div>
-      </section>
+      <Reviews />
 
-      <section className="sec" style={{ paddingTop: 64, paddingBottom: 96 }}>
-        <SectionHead title="Buying guides" />
-        <div className="cats">
+      <section className="sec" style={{ paddingBottom: 96 }}>
+        <SectionHead eyebrow="Buying guides" title="Choose with" accent="confidence." />
+        <div className="cats guides">
           {guides.map((g) => (
             <Link key={g.t} className="cat rvs guide" href="/products">
-              <div className="guide-img">Article image placeholder</div>
+              <div className="guide-img"><ProductArt kind={g.kind} accent={g.accent} /></div>
               <div style={{ padding: 20 }}><div className="path-n" style={{ fontSize: 12 }}>{g.c}</div><div className="guide-t">{g.t}</div></div>
             </Link>
           ))}

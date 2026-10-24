@@ -1,4 +1,4 @@
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -8,7 +8,7 @@ import MobileTabBar from "@/components/MobileTabBar";
 import { site } from "@/lib/site";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-inter" });
+const sans = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-sans" });
 
 export const metadata = {
   title: { default: `${site.name} | ${site.tagline}`, template: `%s | ${site.name}` },
@@ -20,7 +20,7 @@ const themeScript = `try{var t=localStorage.getItem('newcom-theme');if(t!=='dark
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={sans.variable} suppressHydrationWarning>
       {/* browser extensions (Grammarly, ColorZilla, password managers) add attributes to <body> before React loads */}
       <body suppressHydrationWarning>
         <Script id="theme-init" strategy="beforeInteractive">{themeScript}</Script>
