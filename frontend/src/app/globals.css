@@ -993,3 +993,8 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
   .hero .trust { width: calc(100% - 24px); margin: 0 auto 16px; }
   .trust-txt strong { white-space: normal; }
 }
+/* tighter hero: text sits a fixed 44px above the spec bar */
+.hero { min-height: min(740px, 92dvh); }
+.hero .htxt { justify-content: flex-end; padding-top: 72px; padding-bottom: 44px; }
+.hero .trust { margin-bottom: 32px; }
+@media (max-width: 899px) { .hero .htxt { padding: 40px 16px 24px; } .hero .trust { margin-bottom: 14px; } }
