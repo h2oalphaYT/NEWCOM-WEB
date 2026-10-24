@@ -154,6 +154,11 @@ export default function ProductDetail({ p }) {
         <div className="pgrid" style={{ marginTop: 24 }}>{relatedFill.map((r) => <ProductCard key={r.id} p={r} />)}</div>
       </section>
 
+      <div className="pd-buybar no-print">
+        <div><strong>{lkr(p.price)}</strong><span>or 3 × {lkr(koko(p.price))} with KOKO</span></div>
+        <button className="btn btn-primary" onClick={addCart} disabled={noBuy} style={{ background: noBuy ? "#94A3B8" : flash ? "#15803D" : undefined }}>{noBuy ? "Out of stock" : flash ? "Added ✓" : "Add to cart"}</button>
+      </div>
+
       {lb && (
         <div role="dialog" aria-modal="true" aria-label="Product image" className="lb" onClick={() => setLb(false)}>
           <button onClick={() => setLb(false)} aria-label="Close">×</button>

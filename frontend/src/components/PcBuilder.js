@@ -235,6 +235,15 @@ export default function PcBuilder() {
         </div>
       </div>
 
+      {/* phone-only bar: running total and the main action stay visible while picking parts */}
+      <div className="b-mobibar no-print" aria-live="polite">
+        <div>
+          <strong>{lkr(total)}</strong>
+          <span>{watts ? `${watts}W` : "0W"} · {bad ? <em className="bad">{bad} issue{bad > 1 ? "s" : ""}</em> : `${chosen.length} parts`}</span>
+        </div>
+        <button className="btn btn-primary" onClick={addToCart} disabled={!chosen.length}>Add to cart</button>
+      </div>
+
       {/* printable quotation (only shows when printing) */}
       <section className="print-only" aria-hidden="true">
         <div className="pq-head">

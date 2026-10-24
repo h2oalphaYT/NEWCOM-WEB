@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
 import { icons, productHref, products } from "@/lib/catalog";
 import { menus, linkFor } from "@/lib/menu";
@@ -19,7 +20,32 @@ export default function Header() {
   const [sel, setSel] = useState(-1);
   const [theme, setTheme] = useState("light");
   const [bump, setBump] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+  const [acc, setAcc] = useState(-1);
   const prevCount = useRef(count);
+  const hdrRef = useRef(null);
+  const path = usePathname();
+
+  // close the mobile menu on navigation, lock page scroll while it is open
+  useEffect(() => { setDrawer(false); setOpen(-1); }, [path]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("no-scroll", drawer);
+    if (!drawer) return;
+    const onEsc = (e) => e.key === "Escape" && setDrawer(false);
+    addEventListener("keydown", onEsc);
+    return () => removeEventListener("keydown", onEsc);
+  }, [drawer]);
+
+  // expose the header height so sticky elements (e.g. the builder's 3D view) sit below it
+  useEffect(() => {
+    const el = hdrRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const set = () => document.documentElement.style.setProperty("--hdr-h", `${el.querySelector(".hdr-bar")?.offsetHeight || 0}px`);
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    set();
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (count > prevCount.current) {
@@ -77,7 +103,7 @@ export default function Header() {
   const isDark = theme === "dark";
 
   return (
-    <header className={`hdr${ann ? " has-ann" : ""}`} onMouseLeave={() => setOpen(-1)}>
+    <header ref={hdrRef} className={`hdr${ann ? " has-ann" : ""}`} onMouseLeave={() => setOpen(-1)}>
       {ann && (
         <div className="ann">
           <span>Island-wide delivery · Manufacturer warranty on all products</span>
@@ -88,6 +114,9 @@ export default function Header() {
       )}
       <div className="hdr-bar">
         <div className="hdr-top">
+          <button className="ib mb-only" onClick={() => setDrawer(true)} aria-label="Open menu" aria-expanded={drawer} aria-controls="mnav">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
           <Link href="/" className="logo" aria-label="Newcom home">
             <img className="light" src="/brand/newcom-logo.png" alt={`Newcom: ${site.tagline}`} />
             <img className="dark" src="/brand/newcom-logo-dark.png" alt="" aria-hidden="true" />
@@ -123,12 +152,12 @@ export default function Header() {
                 <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
               )}
             </button>
-            <a className="ib" href={site.phoneHref} aria-label={`Call ${site.phone}`} title={`Call ${site.phone}`}>
+            <a className="ib dt-only" href={site.phoneHref} aria-label={`Call ${site.phone}`} title={`Call ${site.phone}`}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>
             </a>
             <Link href="/cart" className="call" aria-label={`Cart, ${count} items`}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" /></svg>
-              Cart <span className={`cartn${bump ? " bump" : ""}`}>{count}</span>
+              <span className="dt-only">Cart</span> <span className={`cartn${bump ? " bump" : ""}`}>{count}</span>
             </Link>
           </div>
         </div>
@@ -159,6 +188,46 @@ export default function Header() {
             <Link href={linkFor(cur.label)} className="mega-all" onClick={() => setOpen(-1)}>Shop all {cur.label} →</Link>
           </div>
         </div>
+      )}
+      {drawer && createPortal(
+        <div className="mnav-wrap" onClick={() => setDrawer(false)}>
+          <nav id="mnav" className="mnav" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
+            <div className="mnav-head">
+              <img className="mnav-logo" src={isDark ? "/brand/newcom-logo-dark.png" : "/brand/newcom-logo.png"} alt="Newcom" />
+              <button className="ib" onClick={() => setDrawer(false)} aria-label="Close menu">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="mnav-quick">
+              <Link href="/pc-builder" className="mq-build">Build your PC</Link>
+              <Link href="/pre-owned">Pre-owned</Link>
+              <Link href="/compare">Compare</Link>
+            </div>
+            <div className="mnav-sec">Shop by category</div>
+            {menus.map((m, i) => (
+              <div key={m.label} className="mnav-acc">
+                <button onClick={() => setAcc(acc === i ? -1 : i)} aria-expanded={acc === i}>
+                  {m.label}<span aria-hidden="true">{acc === i ? "−" : "+"}</span>
+                </button>
+                {acc === i && (
+                  <div className="mnav-links">
+                    <Link href={linkFor(m.label)}>Shop all {m.label}</Link>
+                    {m.cols.flatMap((c) => c.links).map((l) => <Link key={l} href={linkFor(l)}>{l}</Link>)}
+                  </div>
+                )}
+              </div>
+            ))}
+            <div className="mnav-sec">Help</div>
+            <Link className="mnav-row" href="/services">Repairs and services</Link>
+            <Link className="mnav-row" href="/support/warranty">Warranty claims</Link>
+            <Link className="mnav-row" href="/contact">Contact and directions</Link>
+            <div className="mnav-call">
+              <a className="btn" href={site.phoneHref}>Call {site.phone}</a>
+              <a className="btn btn-primary" href={`https://wa.me/${site.whatsappNumber}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+            </div>
+          </nav>
+        </div>,
+        document.body
       )}
     </header>
   );

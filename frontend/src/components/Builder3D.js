@@ -308,7 +308,7 @@ export default function Builder3D({ sel, focus }) {
       {noGl && <div className="b3d-fallback">3D preview needs WebGL. Your build list and checks still work.</div>}
       {count === 0 && !noGl && <div className="b3d-hint">Pick a case to start. Each part you choose is fitted here in 3D.</div>}
       {placed && <div className="b3d-toast msg" role="status">✓ {placed}</div>}
-      <div className="b3d-foot">Drag to rotate · {count}/{IN_CASE.length - 1} parts fitted</div>
+      <div className="b3d-foot">Drag to rotate · {count}/{IN_CASE.length} parts fitted</div>
     </div>
   );
 }

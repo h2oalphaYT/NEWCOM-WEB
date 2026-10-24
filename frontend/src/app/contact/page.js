@@ -13,7 +13,7 @@ export default function Contact() {
       <p className="lead">Visit our Colombo showroom, call, or message us on WhatsApp.</p>
 
       <div className="builder">
-        <div className="card" style={{ flex: "1 1 360px", padding: 24, display: "grid", gap: 18, fontSize: 15, lineHeight: 1.6 }}>
+        <div className="card contact-links" style={{ flex: "1 1 360px", padding: 24, display: "grid", gap: 18, fontSize: 15, lineHeight: 1.6 }}>
           <div><div className="slot-label">Address</div>{site.address}</div>
           <div><div className="slot-label">Phone</div><a href={site.phoneHref}>{site.phone}</a></div>
           <div><div className="slot-label">WhatsApp</div><a href={whatsappLink()} target="_blank" rel="noopener noreferrer">{site.whatsapp}</a></div>
