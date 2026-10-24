@@ -5,6 +5,7 @@ import PcScene from "@/components/PcScene";
 import ProductArt from "@/components/ProductArt";
 import ProductCard from "@/components/ProductCard";
 import Reviews from "@/components/Reviews";
+import ShowVideo from "@/components/ShowVideo";
 import { bestSellers, byIds, categoryHref, extraCategories, newArrivals } from "@/lib/catalog";
 import { site } from "@/lib/site";
 
@@ -136,7 +137,8 @@ export default function Home() {
 
       <section className="sec showcase">
         <Link href="/pc-builder" className="show show-gpu rvl">
-          <span className="show-grid" aria-hidden="true" />
+          <ShowVideo src="/media/show-gpu.mp4" poster="/media/show-gpu.jpg" />
+          <span className="show-shade" aria-hidden="true" />
           <span className="show-glow" aria-hidden="true" />
           <div className="show-txt">
             <span className="pill-eyebrow dark">Gaming performance</span>
@@ -145,10 +147,10 @@ export default function Home() {
             <div className="chipset"><span>GeForce RTX 40</span><span>Radeon RX 7000</span><span>Ray tracing</span><span>DLSS / FSR</span></div>
             <span className="cta cta-light">Start a build<Arrow /></span>
           </div>
-          <div className="show-art float" aria-hidden="true"><ProductArt kind="gpu" accent="#FF3B3B" /></div>
         </Link>
         <Link href={categoryHref("Memory and storage")} className="show show-sto rvr">
-          <span className="show-grid" aria-hidden="true" />
+          <ShowVideo src="/media/show-storage.mp4" poster="/media/show-storage.jpg" />
+          <span className="show-shade" aria-hidden="true" />
           <span className="show-glow" aria-hidden="true" />
           <div className="show-txt">
             <span className="pill-eyebrow dark">Upgrades</span>
@@ -156,10 +158,6 @@ export default function Home() {
             <p>NVMe drives and DDR5 kits for the PC you already own, filtered by interface, capacity and generation.</p>
             <div className="chipset"><span>NVMe Gen4</span><span>DDR5</span><span>DDR4</span><span>Up to 4TB</span></div>
             <span className="cta cta-light">Shop upgrades<Arrow /></span>
-          </div>
-          <div className="show-art stack" aria-hidden="true">
-            <span className="float"><ProductArt kind="ram" accent="#3B82F6" /></span>
-            <span className="float d2"><ProductArt kind="ssd" accent="#22D3EE" /></span>
           </div>
         </Link>
       </section>
