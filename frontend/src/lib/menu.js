@@ -22,3 +22,25 @@ export function linkFor(label) {
   if (known.has(cat)) return `/products?category=${encodeURIComponent(cat)}`;
   return `/products?q=${encodeURIComponent(label)}`;
 }
+
+// Pictures for menu items, so shoppers can recognise a product type without knowing its name.
+// img: photo in /public/media/cat, logo: brand mark key (see MenuThumb), kind: ProductArt fallback.
+const photo = (n) => ({ img: `/media/cat/${n}-t.webp` });
+const thumbs = {
+  Laptops: photo("laptop"), "Gaming laptops": photo("laptop"), "Business laptops": photo("laptop"), "Student laptops": photo("laptop"), "Creator laptops": photo("laptop"),
+  "Desktop PCs": photo("desktop"), "Gaming PCs": photo("desktop"), Workstations: photo("case"), "Office PCs": photo("case"), "Build your PC": photo("desktop"),
+  Components: photo("gpu"), Processors: photo("cpu"), "Graphics cards": photo("gpu"), Motherboards: { kind: "case" }, "Memory (RAM)": photo("ram-ssd"),
+  "SSDs and storage": photo("memory"), "Power supplies": { kind: "psu" }, "PC cases": photo("case"), "Coolers and fans": { kind: "psu" },
+  Monitors: photo("monitor"), "Gaming monitors": photo("monitor"), "Office monitors": photo("monitor"), "Creator monitors": photo("monitor"),
+  "24 inch": photo("monitor"), "27 inch": photo("monitor"), "32 inch and above": photo("monitor"),
+  Peripherals: photo("peripherals"), Keyboards: photo("peripherals"), Mice: photo("peripherals"), Controllers: { kind: "mouse" },
+  Headsets: photo("peripherals"), Speakers: { kind: "headset" }, Microphones: { kind: "headset" },
+  "Sim racing": { kind: "case" }, "Streaming and creator": { kind: "headset" }, Workspace: { kind: "case" },
+  "Chairs and desks": { kind: "case" }, "UPS and power backup": { kind: "psu" },
+  Networking: { kind: "ssd" }, Routers: { kind: "ssd" }, Switches: { kind: "ssd" }, "Wi-Fi adapters": { kind: "ssd" }, Cables: { kind: "psu" },
+  ASUS: { logo: "asus" }, MSI: { logo: "msi" }, Lenovo: { logo: "lenovo" }, HP: { logo: "hp" },
+  AMD: { logo: "amd" }, Intel: { logo: "intel" }, NVIDIA: { logo: "nvidia" }, Corsair: { logo: "corsair" },
+};
+export const thumbFor = (label) => thumbs[label] || { kind: "case" };
+// large picture for the "Shop all" card in each dropdown
+export const heroFor = (label) => thumbs[label]?.img?.replace("-t.webp", ".webp");

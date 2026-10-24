@@ -27,13 +27,13 @@ const trust = [
 
 // category bento: size + art + colour per tile
 const bento = [
-  { n: "Graphics cards", s: "GeForce RTX and Radeon RX", kind: "gpu", accent: "#FF3B3B", cls: "b-xl c-red", tag: "Most popular" },
-  { n: "Laptops", s: "Gaming, creator and business", kind: "laptop", accent: "#8B5CF6", cls: "b-tall c-violet" },
-  { n: "Processors", s: "Intel Core and AMD Ryzen", kind: "cpu", accent: "#F97316", cls: "c-amber" },
-  { n: "Monitors", s: "High refresh and colour accurate", kind: "monitor", accent: "#22D3EE", cls: "c-cyan" },
-  { n: "Memory and storage", s: "DDR5, NVMe and SSD", kind: "ram", accent: "#3B82F6", cls: "c-blue" },
-  { n: "Desktop PCs", s: "Ready builds and workstations", kind: "case", accent: "#E31E24", cls: "b-wide c-ink" },
-  { n: "Peripherals", s: "Keyboards, mice and headsets", kind: "headset", accent: "#10B981", cls: "c-green" },
+  { n: "Graphics cards", s: "GeForce RTX and Radeon RX", img: "gpu", cls: "b-xl c-red", tag: "Most popular" },
+  { n: "Laptops", s: "Gaming, creator and business", img: "laptop", cls: "b-tall c-violet" },
+  { n: "Processors", s: "Intel Core and AMD Ryzen", img: "cpu", cls: "c-amber" },
+  { n: "Monitors", s: "High refresh and colour accurate", img: "monitor", cls: "c-cyan" },
+  { n: "Memory and storage", s: "DDR5, NVMe and SSD", img: "memory", cls: "c-blue" },
+  { n: "Desktop PCs", s: "Ready builds and workstations", img: "desktop", cls: "b-wide c-ink" },
+  { n: "Peripherals", s: "Keyboards, mice and headsets", img: "peripherals", cls: "c-green" },
 ];
 
 const paths = [
@@ -105,8 +105,9 @@ export default function Home() {
         <div className="bento">
           {bento.map((c) => (
             <Link key={c.n} href={categoryHref(c.n)} className={`bento-tile ${c.cls} rvs`}>
+              <img className="bento-img" src={`/media/cat/${c.img}.webp`} alt="" loading="lazy" />
+              <span className="bento-shade" aria-hidden="true" />
               <span className="bento-glow" aria-hidden="true" />
-              <span className="bento-art" aria-hidden="true"><ProductArt kind={c.kind} accent={c.accent} /></span>
               <span className="bento-txt">
                 {c.tag && <em>{c.tag}</em>}
                 <strong>{c.n}</strong>

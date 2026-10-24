@@ -6,7 +6,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
 import { icons, productHref, products } from "@/lib/catalog";
-import { menus, linkFor } from "@/lib/menu";
+import MenuThumb from "@/components/MenuThumb";
+import { heroFor, menus, linkFor } from "@/lib/menu";
 import { lkr, site } from "@/lib/site";
 
 const kindIcon = { gpu: icons.gpu, cpu: icons.cpu, laptop: icons.lap, monitor: icons.mon };
@@ -180,12 +181,15 @@ export default function Header() {
                 <h4>{c.title}</h4>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   {c.links.map((l) => (
-                    <Link key={l} href={linkFor(l)} className="hit" onClick={() => setOpen(-1)}>{l}</Link>
+                    <Link key={l} href={linkFor(l)} className="hit mlink" onClick={() => setOpen(-1)}><MenuThumb label={l} />{l}</Link>
                   ))}
                 </div>
               </div>
             ))}
-            <Link href={linkFor(cur.label)} className="mega-all" onClick={() => setOpen(-1)}>Shop all {cur.label} →</Link>
+            <Link href={linkFor(cur.label)} className="mega-all" onClick={() => setOpen(-1)}>
+              {heroFor(cur.label) && <img src={heroFor(cur.label)} alt="" />}
+              <span>Shop all {cur.label} →</span>
+            </Link>
           </div>
         </div>
       )}
@@ -207,12 +211,12 @@ export default function Header() {
             {menus.map((m, i) => (
               <div key={m.label} className="mnav-acc">
                 <button onClick={() => setAcc(acc === i ? -1 : i)} aria-expanded={acc === i}>
-                  {m.label}<span aria-hidden="true">{acc === i ? "−" : "+"}</span>
+                  <span className="mnav-lbl"><MenuThumb label={m.label} />{m.label}</span><span aria-hidden="true">{acc === i ? "−" : "+"}</span>
                 </button>
                 {acc === i && (
                   <div className="mnav-links">
                     <Link href={linkFor(m.label)}>Shop all {m.label}</Link>
-                    {m.cols.flatMap((c) => c.links).map((l) => <Link key={l} href={linkFor(l)}>{l}</Link>)}
+                    {m.cols.flatMap((c) => c.links).map((l) => <Link key={l} href={linkFor(l)}><MenuThumb label={l} />{l}</Link>)}
                   </div>
                 )}
               </div>
