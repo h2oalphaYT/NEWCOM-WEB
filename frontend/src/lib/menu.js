@@ -32,7 +32,7 @@ const thumbs = {
   Components: photo("gpu"), Processors: photo("cpu"), "Graphics cards": photo("gpu"), Motherboards: { kind: "case" }, "Memory (RAM)": photo("ram-ssd"),
   "SSDs and storage": photo("memory"), "Power supplies": { kind: "psu" }, "PC cases": photo("case"), "Coolers and fans": { kind: "psu" },
   Monitors: photo("monitor"), "Gaming monitors": photo("monitor"), "Office monitors": photo("monitor"), "Creator monitors": photo("monitor"),
-  "24 inch": photo("monitor"), "27 inch": photo("monitor"), "32 inch and above": photo("monitor"),
+  "24 inch": { size: 24 }, "27 inch": { size: 27 }, "32 inch and above": { size: 32 },
   Peripherals: photo("peripherals"), Keyboards: photo("peripherals"), Mice: photo("peripherals"), Controllers: { kind: "mouse" },
   Headsets: photo("peripherals"), Speakers: { kind: "headset" }, Microphones: { kind: "headset" },
   "Sim racing": { kind: "case" }, "Streaming and creator": { kind: "headset" }, Workspace: { kind: "case" },
