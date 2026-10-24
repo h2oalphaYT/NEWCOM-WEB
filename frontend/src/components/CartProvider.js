@@ -45,13 +45,26 @@ export function CartProvider({ children }) {
     notify(`${qty > 1 ? `${qty} × ` : ""}${p.name} added.`);
   }
 
-  const setQty = (id, qty) => setLines((cur) => cur.map((l) => (l.id === id ? { ...l, qty } : l)));
+  // whole PC build at once (one of each part)
+  function addMany(ids) {
+    setLines((cur) => {
+      let next = [...cur];
+      ids.forEach((id) => {
+        if (!findProduct(id)) return;
+        next = next.some((l) => l.id === id) ? next.map((l) => (l.id === id ? { ...l, qty: l.qty + 1 } : l)) : [...next, { id, qty: 1 }];
+      });
+      return next;
+    });
+    notify(`${ids.length} build parts added.`);
+  }
+
+  const setQty =(id, qty) => setLines((cur) => cur.map((l) => (l.id === id ? { ...l, qty } : l)));
   const remove = (id) => setLines((cur) => cur.filter((l) => l.id !== id));
   const clear = () => setLines([]);
   const count = lines.reduce((a, l) => a + l.qty, 0);
 
   return (
-    <CartContext.Provider value={{ lines, count, add, setQty, remove, clear, notify }}>
+    <CartContext.Provider value={{ lines, count, add, addMany, setQty, remove, clear, notify }}>
       {children}
       {toast && (
         <div role="status" className="toast">

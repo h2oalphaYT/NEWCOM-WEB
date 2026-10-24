@@ -1,4 +1,5 @@
 // Sample catalogue from the Newcom Redesign mockup. Replace with the inventory API once the UI is final.
+import { partById } from "@/lib/builder";
 
 export const icons = {
   gpu: "M3 8h18v8H3zM12 12a2 2 0 1 0 .01 0M3 18h6",
@@ -56,7 +57,11 @@ export const categories = [
   { n: "Monitors", s: "Size, refresh rate, panel", d: icons.mon },
 ];
 
-export const findProduct = (id) => products.find((x) => x.id === id);
+// PC builder parts can also go in the cart
+const builderKind = { cpu: "cpu", gpu: "gpu", ram: "ram", ssd: "ssd", hdd: "ssd", xsto: "ssd", psu: "psu", cooler: "psu", fans: "psu", case: "case", mb: "case", rgb: "case", mon: "monitor", kbd: "keyboard", mouse: "mouse" };
+const fromBuilder = (b) => b && { id: b.id, name: b.name, brand: b.name.split(" ")[0], category: "PC build parts", kind: builderKind[b.slot] || "case", price: b.price, stock: "in", max: 5, specs: [{ k: "Source", v: "PC builder sample" }] };
+
+export const findProduct = (id) => products.find((x) => x.id === id) || fromBuilder(partById(id));
 export const byIds = (ids) => ids.map(findProduct).filter(Boolean);
 export const productHref = (id) => `/products/${encodeURIComponent(id)}`;
 export const categoryHref = (c) => `/products?category=${encodeURIComponent(c)}`;
