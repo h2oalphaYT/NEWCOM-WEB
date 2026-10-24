@@ -36,5 +36,9 @@ npm install
 npm run dev            # http://localhost:3000, expects the API at NEWCOM_API_URL (default http://localhost:8090)
 ```
 
-Pages: `/` home, `/products` catalogue and search, `/pc-builder` (from the PC builder mockup), `/contact`.
+Pages: `/` home (video hero, 3D assembly), `/products` catalogue with per-category filters and branch stock,
+`/products/[id]`, `/compare`, `/pre-owned`, `/cart` (checkout demo), `/pc-builder` (v3: Intel/AMD, templates,
+3D part fitting, wattage, compatibility, print quotation, share link), `/support/warranty` (claim + tracking),
+`/services` (repair booking via WhatsApp), `/contact`. All data is sample data in `src/lib/catalog.js` and
+`src/lib/builder.js` until the inventory API is connected. Branches shown come from `site.branches`.
 Contact details are in `src/lib/site.js`, taken from newcom.lk.

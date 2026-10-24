@@ -26,6 +26,7 @@ export default function Footer() {
               <Link href="/products?q=Desktop">Desktop PCs</Link>
               <Link href="/products?q=Graphics">Graphics cards</Link>
               <Link href="/products?q=Monitor">Monitors</Link>
+              <Link href="/pre-owned">Certified pre-owned</Link>
               <Link href="/pc-builder">Build your PC</Link>
             </div>
           </div>
@@ -41,6 +42,9 @@ export default function Footer() {
             <h4>Get in touch</h4>
             <div className="ftr-links">
               <Link href="/contact">Contact us</Link>
+              <Link href="/support/warranty">Warranty claims</Link>
+              <Link href="/services">Repairs and services</Link>
+              <Link href="/compare">Compare products</Link>
               <a href={whatsappLink()} target="_blank" rel="noopener noreferrer">WhatsApp {site.whatsapp}</a>
               <a href={site.social.facebook} target="_blank" rel="noopener noreferrer">Facebook</a>
               <a href={site.social.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>

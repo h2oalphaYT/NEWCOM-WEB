@@ -9,9 +9,11 @@ import { lkr } from "@/lib/site";
 
 const provinces = ["Western", "Central", "Southern", "Northern", "Eastern", "North Western", "North Central", "Uva", "Sabaragamuwa"];
 const methods = [
-  { k: "cod", t: "Cash on delivery", s: "[Enable only if Newcom offers it]" },
-  { k: "bank", t: "Bank transfer", s: "[Bank details shown after order, if offered]" },
-  { k: "card", t: "Card payment via gateway", s: "[Needs gateway credentials and backend; card details are never stored here]" },
+  { k: "card", t: "Credit or debit card", s: "Paid securely on the bank's payment page. Card details never touch this site. [Needs gateway account]" },
+  { k: "koko", t: "KOKO: 3 interest-free instalments", s: "Pay a third today and the rest over two months. [Needs KOKO merchant account]" },
+  { k: "mintpay", t: "Mintpay: split into 3", s: "Interest-free split payments. [Needs Mintpay merchant account]" },
+  { k: "bank", t: "Direct bank transfer", s: "Bank details are shown after you place the order. [Confirm account details]" },
+  { k: "store", t: "Reserve and pay in store", s: "We hold the items for you at our Colombo showroom." },
 ];
 const empty = { name: "", email: "", phone: "", address: "", city: "", province: "", district: "" };
 

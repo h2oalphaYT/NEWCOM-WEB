@@ -4,14 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import ProductArt from "@/components/ProductArt";
 import { useCart } from "@/components/CartProvider";
-import { brandAccent, productHref, stockInfo } from "@/lib/catalog";
+import { useCompare } from "@/components/CompareProvider";
+import { brandAccent, koko, productHref, stockInfo } from "@/lib/catalog";
 import { lkr } from "@/lib/site";
 
 export default function ProductCard({ p }) {
   const cart = useCart();
   const [wish, setWish] = useState(false);
   const [pop, setPop] = useState(false);
-  const [cmp, setCmp] = useState(false);
+  const compare = useCompare();
+  const cmp = compare.has(p.id);
   const [qv, setQv] = useState(false);
   const [flash, setFlash] = useState(false);
 
@@ -41,7 +43,7 @@ export default function ProductCard({ p }) {
         </button>
         <div className="act">
           <button onClick={() => setQv(!qv)}>Quick view</button>
-          <button onClick={() => setCmp(!cmp)} aria-pressed={cmp} style={cmp ? { borderColor: "#E31E24", background: "var(--tint)" } : undefined}>{cmp ? "Comparing" : "Compare"}</button>
+          <button onClick={() => compare.toggle(p.id)} aria-pressed={cmp} style={cmp ? { borderColor: "#E31E24", background: "var(--tint)" } : undefined}>{cmp ? "Comparing" : "Compare"}</button>
         </div>
         {qv && (
           <div className="qv">
@@ -59,9 +61,10 @@ export default function ProductCard({ p }) {
       <div className="pc-body">
         <span className="pc-brand">{p.brand}</span>
         <Link href={href} className="pc-name">{p.name}</Link>
-        <div className="pc-stock" style={{ color: stockColor }}><span style={{ background: stockColor }} />{stockLabel}</div>
+        <div className="pc-stock" style={{ color: stockColor }}><span style={{ background: stockColor }} />{stockLabel}{p.condition === "used" && <em className="pc-used">Grade {p.grade} · {p.usedWarranty} warranty</em>}</div>
         <div style={{ marginTop: "auto", paddingTop: 10 }}>
           {p.was && <div style={{ fontSize: 12, color: "var(--mute)", textDecoration: "line-through" }}>{lkr(p.was)}</div>}
+          {p.price >= 3000 && <div className="pc-koko">or 3 × <strong>{lkr(koko(p.price))}</strong> with <span className="koko">KOKO</span></div>}
           <div className="pc-buy">
             <span className="pc-price">{lkr(p.price)}</span>
             <button className="add" onClick={add} disabled={noBuy} style={{ background: noBuy ? "#94A3B8" : flash ? "#15803D" : "#E31E24", cursor: noBuy ? "not-allowed" : "pointer" }}>

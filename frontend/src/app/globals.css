@@ -451,3 +451,48 @@ h1, h2, h3 { margin: 0; letter-spacing: -.03em; }
   .print-only tfoot td { font-weight: 800; font-size: 15px; border-top: 2px solid #000; }
   .pq-small { margin-top: 24px; color: #555; font-size: 11px; }
 }
+
+/* ---------- compare, BNPL, pre-owned, support ---------- */
+.cmp-tray { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 85; width: min(960px, calc(100vw - 32px)); display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line2); box-shadow: 0 20px 40px -16px rgba(0,0,0,.35); }
+.cmp-items { display: flex; gap: 8px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.cmp-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 6px 6px 6px 10px; border-radius: 8px; background: var(--surface); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp-chip button { border: 0; background: none; font-size: 16px; cursor: pointer; color: var(--mute); }
+.cmp-msg { font-size: 12px; color: #B45309; }
+.cmp-tray .btn { height: 40px; flex: none; }
+.cmp-tray a[aria-disabled="true"] { pointer-events: none; opacity: .5; }
+.cmp-scroll { margin-top: 24px; overflow-x: auto; }
+.cmp-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 640px; }
+.cmp-table th, .cmp-table td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 14px; }
+.cmp-table thead th { vertical-align: bottom; width: 22%; }
+.cmp-table tbody th { color: var(--mute); font-weight: 600; width: 160px; position: sticky; left: 0; background: var(--bg); }
+.cmp-table tr.diff td { background: var(--surface); }
+.cmp-table td.best { color: var(--okfg); font-weight: 700; }
+.cmp-art { aspect-ratio: 4/3; background: var(--surface); border-radius: 10px; padding: 12px; }
+.cmp-name { display: block; margin-top: 10px; font-weight: 700; line-height: 1.35; }
+.cmp-actions { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+.cmp-actions .btn { height: 38px; padding: 0 12px; font-size: 13px; }
+.koko { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #00E08A; color: #0B2B1E; font-weight: 800; font-size: 11px; letter-spacing: .02em; }
+.mintpay { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #2DD4BF; color: #042F2E; font-weight: 800; font-size: 11px; }
+.pc-koko { font-size: 12px; color: var(--mute); margin-bottom: 4px; }
+.pc-used { font-style: normal; font-weight: 600; color: var(--mute); margin-left: 6px; }
+.bnpl { margin-top: 16px; display: grid; gap: 8px; padding: 14px 16px; border: 1px dashed var(--line2); border-radius: 10px; font-size: 13px; }
+.bnpl > div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.used-box { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--okbg); color: var(--okfg); font-size: 13px; line-height: 1.5; }
+.used-box strong { display: block; }
+.branch-stock { margin-top: 12px; display: grid; gap: 6px; font-size: 13px; }
+.branch-stock div { display: flex; align-items: center; gap: 8px; }
+.branch-stock span { width: 8px; height: 8px; border-radius: 4px; }
+.extra-cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.extra-cat { padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; gap: 4px; }
+.extra-cat strong { font-size: 16px; }
+.extra-cat span { font-size: 13px; color: var(--mute); }
+.extra-cat.used { background: var(--tint); border-color: var(--tintline); }
+.ta { height: auto; padding: 12px 14px; resize: vertical; font-family: inherit; }
+.rma-steps { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 8px; }
+.rma-steps li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--mute); }
+.rma-steps li span { width: 24px; height: 24px; border-radius: 12px; background: var(--line); color: var(--mute); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.rma-steps li.done { color: var(--ink); font-weight: 600; }
+.rma-steps li.done span { background: #15803D; color: #fff; }
+.svc { text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.svc.on { border-color: var(--brand); background: var(--tint); }
+@media print { .cmp-tray { display: none !important; } }

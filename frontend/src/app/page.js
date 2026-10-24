@@ -2,7 +2,7 @@ import Link from "next/link";
 import HeroVideo from "@/components/HeroVideo";
 import PcScene from "@/components/PcScene";
 import ProductCard from "@/components/ProductCard";
-import { bestSellers, byIds, categories, categoryHref, newArrivals } from "@/lib/catalog";
+import { bestSellers, byIds, categories, categoryHref, extraCategories, newArrivals } from "@/lib/catalog";
 import { site } from "@/lib/site";
 
 const check = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7" /></svg>;
@@ -91,6 +91,15 @@ export default function Home() {
               <span><strong>{c.n}</strong><span>{c.s}</span></span>
             </Link>
           ))}
+        </div>
+      </section>
+
+      <section className="sec" style={{ paddingTop: 40 }}>
+        <div className="extra-cats">
+          {extraCategories.map((c) => (
+            <Link key={c.n} className="cat rvs extra-cat" href={categoryHref(c.n)}><strong>{c.n}</strong><span>{c.s}</span></Link>
+          ))}
+          <Link className="cat rvs extra-cat used" href="/pre-owned"><strong>Certified pre-owned</strong><span>Tested, with warranty</span></Link>
         </div>
       </section>
 

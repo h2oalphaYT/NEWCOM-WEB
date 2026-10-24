@@ -3,24 +3,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
-import { products } from "@/lib/catalog";
-import { lkr } from "@/lib/site";
+import { facetsFor, products } from "@/lib/catalog";
+import { lkr, site } from "@/lib/site";
 
-const MAX = 400000;
+const MAX = 600000;
 const PER_PAGE = 6;
 
 // Category and filters page from the redesign mockup, generalised to the whole sample catalogue.
-export default function CategoryView({ category = "", q = "" }) {
+export default function CategoryView({ category = "", q = "", condition = "" }) {
   const base = useMemo(() => {
     const n = q.trim().toLowerCase();
     return products.filter((p) =>
       (!category || p.category === category) &&
+      (!condition || p.condition === condition) &&
       (!n || `${p.name} ${p.brand} ${p.id} ${p.category}`.toLowerCase().includes(n)));
-  }, [category, q]);
+  }, [category, q, condition]);
 
-  const [brands, setBrands] = useState([]);
-  const [chips, setChips] = useState([]);
+  const facets = useMemo(() => facetsFor(category), [category]);
+  const [picked, setPicked] = useState({}); // facet title -> [values]
   const [stock, setStock] = useState(false);
+  const [branch, setBranch] = useState("");
+  const [cond, setCond] = useState([]);
   const [max, setMax] = useState(MAX);
   const [sort, setSort] = useState("pop");
   const [loading, setLoading] = useState(false);
@@ -36,36 +39,44 @@ export default function CategoryView({ category = "", q = "" }) {
     const t = ++tt.current;
     setTimeout(() => { if (t === tt.current) setLoading(false); }, 260);
   }
-  const toggle = (set, val) => refresh(() => set((cur) => (cur.includes(val) ? cur.filter((x) => x !== val) : [...cur, val])));
-  const clearAll = () => refresh(() => { setBrands([]); setChips([]); setStock(false); setMax(MAX); });
+  const toggleFacet = (title, val) => refresh(() => setPicked((cur) => {
+    const vals = cur[title] || [];
+    return { ...cur, [title]: vals.includes(val) ? vals.filter((x) => x !== val) : [...vals, val] };
+  }));
+  const toggleCond = (v) => refresh(() => setCond((cur) => (cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v])));
+  const clearAll = () => refresh(() => { setPicked({}); setStock(false); setBranch(""); setCond([]); setMax(MAX); });
 
-  useEffect(() => { setBrands([]); setChips([]); setStock(false); setMax(MAX); setPage(1); }, [category, q]);
+  useEffect(() => { setPicked({}); setStock(false); setBranch(""); setCond([]); setMax(MAX); setPage(1); }, [category, q, condition]);
 
   let list = base.filter((p) =>
-    (!brands.length || brands.includes(p.brand)) &&
-    (!chips.length || chips.includes(p.chip || p.category)) &&
+    facets.every((f) => !(picked[f.title] || []).length || picked[f.title].includes(f.get(p))) &&
+    (!cond.length || cond.includes(p.condition)) &&
     (!stock || p.stock === "in") &&
+    (!branch || (p.branchStock?.[branch] || 0) > 0) &&
     p.price <= max);
   if (sort === "lo") list = [...list].sort((a, b) => a.price - b.price);
   if (sort === "hi") list = [...list].sort((a, b) => b.price - a.price);
 
-  const uniq = (fn) => [...new Set(base.map(fn))];
-  const count = (fn, v) => base.filter((p) => fn(p) === v).length;
-  const subKey = (p) => p.chip || p.category;
   const isGpu = category === "Graphics cards";
+  const valuesOf = (f) => [...new Set(base.map(f.get).filter(Boolean))];
   const groups = [
-    { title: "Brand", opts: uniq((p) => p.brand).map((v) => ({ label: v, n: count((p) => p.brand, v), on: brands.includes(v), toggle: () => toggle(setBrands, v) })) },
-    { title: isGpu ? "GPU chipset" : "Type", opts: uniq(subKey).map((v) => ({ label: v, n: count(subKey, v), on: chips.includes(v), toggle: () => toggle(setChips, v) })) },
+    ...facets.map((f) => ({
+      title: f.title,
+      opts: valuesOf(f).map((v) => ({ label: v, n: base.filter((p) => f.get(p) === v).length, on: (picked[f.title] || []).includes(v), toggle: () => toggleFacet(f.title, v) })),
+    })).filter((g) => g.opts.length > 1 || (picked[g.title] || []).length),
+    ...(!condition && base.some((p) => p.condition === "used") ? [{ title: "Condition", opts: [["new", "New"], ["used", "Certified pre-owned"]].map(([v, l]) => ({ label: l, n: base.filter((p) => p.condition === v).length, on: cond.includes(v), toggle: () => toggleCond(v) })) }] : []),
     { title: "Availability", opts: [{ label: "In stock only", n: base.filter((p) => p.stock === "in").length, on: stock, toggle: () => refresh(() => setStock(!stock)) }] },
+    { title: "Branch stock", opts: site.branches.map((b) => ({ label: `In stock at ${b}`, n: base.filter((p) => (p.branchStock?.[b] || 0) > 0).length, on: branch === b, toggle: () => refresh(() => setBranch(branch === b ? "" : b)) })) },
   ];
   const activeChips = [
-    ...brands.map((v) => ({ label: v, remove: () => toggle(setBrands, v) })),
-    ...chips.map((v) => ({ label: v, remove: () => toggle(setChips, v) })),
+    ...Object.entries(picked).flatMap(([t, vals]) => vals.map((v) => ({ label: v, remove: () => toggleFacet(t, v) }))),
+    ...cond.map((v) => ({ label: v === "used" ? "Pre-owned" : "New", remove: () => toggleCond(v) })),
     ...(stock ? [{ label: "In stock", remove: () => refresh(() => setStock(false)) }] : []),
+    ...(branch ? [{ label: `At ${branch}`, remove: () => refresh(() => setBranch("")) }] : []),
     ...(max < MAX ? [{ label: `Up to ${lkr(max)}`, remove: () => refresh(() => setMax(MAX)) }] : []),
   ];
   const shown = list.slice(0, PER_PAGE * page);
-  const title = category || (q ? `Results for “${q}”` : "All products");
+  const title = condition === "used" ? "Certified pre-owned" : category || (q ? `Results for “${q}”` : "All products");
 
   return (
     <>
@@ -78,7 +89,7 @@ export default function CategoryView({ category = "", q = "" }) {
         <div className="cat-head">
           <div>
             <h1 className="page-title" style={{ marginTop: 0 }}>{title}</h1>
-            <p className="lead">{isGpu ? "NVIDIA and AMD graphics cards. Filter by chipset, memory and price." : "Filter by brand, type, availability and price."} Sample data for demonstration.</p>
+            <p className="lead">{condition === "used" ? "Tested second-hand laptops, components and workstations, each with a Newcom warranty." : isGpu ? "NVIDIA and AMD graphics cards. Filter by chipset, memory and price." : category === "Laptops" ? "Filter by brand, processor, RAM, graphics and screen size." : "Filter by brand, type, availability and price."} Sample data for demonstration.</p>
           </div>
           <div className="cat-tools">
             <button className="fb btn" onClick={() => setDrawer(true)}>

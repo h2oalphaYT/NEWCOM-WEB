@@ -5,8 +5,9 @@ import Link from "next/link";
 import ProductArt from "@/components/ProductArt";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/components/CartProvider";
-import { brandAccent, categoryHref, products, stockInfo } from "@/lib/catalog";
-import { lkr } from "@/lib/site";
+import { useCompare } from "@/components/CompareProvider";
+import { brandAccent, categoryHref, koko, mintpay, products, stockInfo } from "@/lib/catalog";
+import { lkr, site } from "@/lib/site";
 
 const info = [
   { t: "Warranty", s: "[Warranty period and terms from the catalogue]", d: "M12 2 4 5v6c0 5 3.4 9 8 11 4.6-2 8-6 8-11V5z" },
@@ -27,7 +28,8 @@ export default function ProductDetail({ p }) {
   const [qty, setQty] = useState(1);
   const [flash, setFlash] = useState(false);
   const [wish, setWish] = useState(false);
-  const [cmp, setCmp] = useState(false);
+  const compare = useCompare();
+  const cmp = compare.has(p.id);
   const [tab, setTab] = useState("spec");
   const [lb, setLb] = useState(false);
 
@@ -76,6 +78,19 @@ export default function ProductDetail({ p }) {
           {p.was && <div style={{ marginTop: 16, fontSize: 14, color: "var(--mute)", textDecoration: "line-through" }}>{lkr(p.was)}</div>}
           <div className="pd-price">{lkr(p.price)}</div>
           <div style={{ marginTop: 4, fontSize: 13, color: "var(--mute)" }}>Sample price. Taxes and delivery fees are shown at checkout once calculated.</div>
+          <div className="bnpl">
+            <div><span className="koko">KOKO</span> Pay in 3 × <strong>{lkr(koko(p.price))}</strong> with your debit or credit card</div>
+            <div><span className="mintpay">mintpay</span> Split into 3 × <strong>{lkr(mintpay(p.price))}</strong>, interest-free</div>
+          </div>
+          {p.condition === "used" && (
+            <div className="used-box"><strong>Certified pre-owned · Grade {p.grade}</strong>Tested by our technicians and covered by a {p.usedWarranty} Newcom warranty.</div>
+          )}
+          <div className="branch-stock">
+            {site.branches.map((b) => {
+              const n = p.branchStock?.[b] || 0;
+              return <div key={b}><span style={{ background: n ? "#15803D" : "#94A3B8" }} />{b}: {n ? `${n} in stock (sample)` : "check availability"}</div>;
+            })}
+          </div>
 
           <div style={{ marginTop: 24, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
             <div role="group" aria-label="Quantity" className="qty">
@@ -91,7 +106,7 @@ export default function ProductDetail({ p }) {
           <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 10 }}>
             <Link href="/cart" className="btn" onClick={() => !noBuy && cart.add(p.id, qty)} style={{ flex: "1 1 140px", borderColor: "var(--ink)" }}>Buy now</Link>
             <button className="btn" onClick={() => setWish(!wish)} aria-pressed={wish} style={{ flex: "1 1 140px", background: wish ? "var(--badbg)" : undefined }}>{wish ? "Saved" : "Wishlist"}</button>
-            <button className="btn" onClick={() => setCmp(!cmp)} aria-pressed={cmp} style={{ flex: "1 1 140px", background: cmp ? "var(--tint)" : undefined }}>{cmp ? "Comparing" : "Compare"}</button>
+            <button className="btn" onClick={() => compare.toggle(p.id)} aria-pressed={cmp} style={{ flex: "1 1 140px", background: cmp ? "var(--tint)" : undefined }}>{cmp ? "Comparing" : "Compare"}</button>
           </div>
 
           <div className="pd-perks">

@@ -9,6 +9,8 @@ export const site = {
   whatsapp: "070 603 8927",
   whatsappNumber: "94706038927",
   email: "info@newcom.lk",
+  // branches shown for stock and pickup. newcom.lk lists only the Colombo showroom; add more here once confirmed.
+  branches: ["Colombo"],
   hours: [
     { days: "Monday to Friday", time: "9:00 AM to 6:00 PM" },
     { days: "Saturday", time: "9:00 AM to 2:00 PM" },

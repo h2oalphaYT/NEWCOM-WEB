@@ -3,6 +3,7 @@ import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/components/CartProvider";
+import { CompareProvider } from "@/components/CompareProvider";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -23,9 +24,11 @@ export default function RootLayout({ children }) {
       <body suppressHydrationWarning>
         <Script id="theme-init" strategy="beforeInteractive">{themeScript}</Script>
         <CartProvider>
-          <Header />
-          <main>{children}</main>
-          <Footer />
+          <CompareProvider>
+            <Header />
+            <main>{children}</main>
+            <Footer />
+          </CompareProvider>
         </CartProvider>
       </body>
     </html>

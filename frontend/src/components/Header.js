@@ -138,8 +138,9 @@ export default function Header() {
               {m.label}
             </button>
           ))}
+          <Link href="/pre-owned" className="nv">Pre-owned</Link>
           <Link href="/pc-builder" className="nv accent">Build your PC</Link>
-          <Link href="/contact" className="nv muted">Contact</Link>
+          <Link href="/services" className="nv muted">Repairs</Link>
         </nav>
       </div>
       {cur && (
