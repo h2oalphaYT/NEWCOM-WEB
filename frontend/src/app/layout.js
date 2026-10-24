@@ -1,6 +1,8 @@
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { CartProvider } from "@/components/CartProvider";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -17,14 +19,14 @@ const themeScript = `try{var t=localStorage.getItem('newcom-theme');if(t!=='dark
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       {/* browser extensions (Grammarly, ColorZilla, password managers) add attributes to <body> before React loads */}
       <body suppressHydrationWarning>
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        <Script id="theme-init" strategy="beforeInteractive">{themeScript}</Script>
+        <CartProvider>
+          <Header />
+          <main>{children}</main>
+          <Footer />
+        </CartProvider>
       </body>
     </html>
   );

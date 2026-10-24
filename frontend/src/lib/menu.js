@@ -1,5 +1,7 @@
-// Category menu from the header mockup. Links go to the catalogue search until
-// the menu is driven by the inventory categories (/api/categories).
+import { categories } from "@/lib/catalog";
+
+// Category menu from the header mockup. Labels that match a catalogue category open it;
+// the rest search the catalogue until the menu is driven by the inventory categories.
 export const menus = [
   { label: "Laptops", cols: [{ title: "Type", links: ["Gaming laptops", "Business laptops", "Student laptops", "Creator laptops"] }, { title: "Brands", links: ["ASUS", "MSI", "Lenovo", "HP"] }] },
   { label: "Desktop PCs", cols: [{ title: "Ready builds", links: ["Gaming PCs", "Workstations", "Office PCs"] }, { title: "Custom", links: ["Build your PC"] }] },
@@ -10,5 +12,12 @@ export const menus = [
   { label: "Software", cols: [{ title: "Licences", links: ["Operating systems", "Office suites", "Security"] }] },
 ];
 
-export const linkFor = (label) =>
-  label === "Build your PC" ? "/pc-builder" : `/products?q=${encodeURIComponent(label)}`;
+const alias = { "Memory (RAM)": "Memory and storage", "SSDs and storage": "Memory and storage", "Power supplies": "Power supplies", Peripherals: "Peripherals" };
+const known = new Set([...categories.map((c) => c.n), "Peripherals", "Power supplies"]);
+
+export function linkFor(label) {
+  if (label === "Build your PC") return "/pc-builder";
+  const cat = alias[label] || label;
+  if (known.has(cat)) return `/products?category=${encodeURIComponent(cat)}`;
+  return `/products?q=${encodeURIComponent(label)}`;
+}

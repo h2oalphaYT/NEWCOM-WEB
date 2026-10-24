@@ -1,17 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCart } from "@/components/CartProvider";
+import { icons, productHref, products } from "@/lib/catalog";
 import { menus, linkFor } from "@/lib/menu";
-import { site } from "@/lib/site";
+import { lkr, site } from "@/lib/site";
+
+const kindIcon = { gpu: icons.gpu, cpu: icons.cpu, laptop: icons.lap, monitor: icons.mon };
 
 export default function Header() {
   const router = useRouter();
+  const { count } = useCart();
   const [ann, setAnn] = useState(true);
   const [open, setOpen] = useState(-1);
   const [q, setQ] = useState("");
+  const [sel, setSel] = useState(-1);
   const [theme, setTheme] = useState("light");
+  const [bump, setBump] = useState(false);
+  const prevCount = useRef(count);
+
+  useEffect(() => {
+    if (count > prevCount.current) {
+      setBump(true);
+      const t = setTimeout(() => setBump(false), 450);
+      prevCount.current = count;
+      return () => clearTimeout(t);
+    }
+    prevCount.current = count;
+  }, [count]);
+
+  const term = q.trim().toLowerCase();
+  const hits = term ? products.filter((p) => `${p.name} ${p.brand} ${p.id}`.toLowerCase().includes(term)).slice(0, 5) : [];
 
   useEffect(() => {
     setTheme(document.documentElement.getAttribute("data-theme") || "light");
@@ -33,9 +54,23 @@ export default function Header() {
     applyTheme(t);
   }
 
+  function go(href) {
+    setQ("");
+    setSel(-1);
+    router.push(href);
+  }
+
   function onSearch(e) {
     e.preventDefault();
-    if (q.trim()) router.push(`/products?q=${encodeURIComponent(q.trim())}`);
+    if (sel >= 0 && hits[sel]) go(productHref(hits[sel].id));
+    else if (q.trim()) go(`/products?q=${encodeURIComponent(q.trim())}`);
+  }
+
+  function onKey(e) {
+    const n = hits.length;
+    if (e.key === "ArrowDown" && n) { e.preventDefault(); setSel((sel + 1) % n); }
+    else if (e.key === "ArrowUp" && n) { e.preventDefault(); setSel((sel - 1 + n) % n); }
+    else if (e.key === "Escape") { setQ(""); setSel(-1); }
   }
 
   const cur = open >= 0 ? menus[open] : null;
@@ -60,7 +95,25 @@ export default function Header() {
           <form className="search" role="search" onSubmit={onSearch}>
             <label htmlFor="hq" className="sr-only">Search products</label>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-            <input id="hq" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by product, brand, model or SKU" autoComplete="off" />
+            <input id="hq" value={q} onChange={(e) => { setQ(e.target.value); setSel(-1); }} onKeyDown={onKey} placeholder="Search by product, brand, model or SKU" autoComplete="off" role="combobox" aria-expanded={!!term} aria-controls="hres" />
+            {term && (
+              <div id="hres" role="listbox" className="hres">
+                {hits.length === 0 ? (
+                  <div className="hres-empty">No products match “{q.trim()}”. Try a model number or brand.</div>
+                ) : (
+                  <>
+                    {hits.map((h, i) => (
+                      <a key={h.id} href={productHref(h.id)} role="option" aria-selected={i === sel} className="hit hres-row" style={{ background: i === sel ? "var(--surface)" : undefined }} onClick={(e) => { e.preventDefault(); go(productHref(h.id)); }}>
+                        <span className="hres-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={kindIcon[h.kind] || icons.ssd} /></svg></span>
+                        <span style={{ minWidth: 0, flex: 1 }}><span className="hres-name">{h.name}</span><span className="hres-meta">{h.brand} · {h.id}</span></span>
+                        <span style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{lkr(h.price)}</span>
+                      </a>
+                    ))}
+                    <a href={`/products?q=${encodeURIComponent(q.trim())}`} className="hres-all" onClick={(e) => { e.preventDefault(); go(`/products?q=${encodeURIComponent(q.trim())}`); }}>See all results for “{q.trim()}”</a>
+                  </>
+                )}
+              </div>
+            )}
           </form>
           <div className="hdr-actions">
             <button className="ib" onClick={toggleTheme} aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"} title={isDark ? "Switch to light theme" : "Switch to dark theme"}>
@@ -70,10 +123,13 @@ export default function Header() {
                 <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
               )}
             </button>
-            <a className="call" href={site.phoneHref}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>
-              {site.phone}
+            <a className="ib" href={site.phoneHref} aria-label={`Call ${site.phone}`} title={`Call ${site.phone}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>
             </a>
+            <Link href="/cart" className="call" aria-label={`Cart, ${count} items`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" /></svg>
+              Cart <span className={`cartn${bump ? " bump" : ""}`}>{count}</span>
+            </Link>
           </div>
         </div>
         <nav className="hn" aria-label="Categories">
