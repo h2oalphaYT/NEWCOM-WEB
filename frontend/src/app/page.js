@@ -20,10 +20,10 @@ const glyph = {
 };
 
 const trust = [
-  { g: "truck", t: "Island-wide delivery", s: "Fast, tracked shipping to every district.", hue: "red" },
-  { g: "shield", t: "Manufacturer warranty", s: "Every product fully covered, claims handled by us.", hue: "violet" },
-  { g: "card", t: "Secure payments", s: "Card, bank transfer, KOKO and Mintpay instalments.", hue: "blue" },
-  { g: "chat", t: "Expert guidance", s: `Talk to a technician on WhatsApp ${site.whatsapp}.`, hue: "green" },
+  { g: "truck", t: "Island-wide delivery", s: "Tracked shipping to every district" },
+  { g: "shield", t: "Official warranty", s: "Full manufacturer coverage" },
+  { g: "card", t: "Secure payments", s: "Card, bank, KOKO and Mintpay" },
+  { g: "chat", t: "Expert guidance", s: "Talk to a technician on WhatsApp" },
 ];
 
 // category bento: size + art + colour per tile
@@ -48,7 +48,7 @@ const checks = ["CPU and motherboard socket match", "Memory generation (DDR4 / D
 const guides = [
   { c: "GPU", t: "How to choose a graphics card for your monitor", kind: "gpu", accent: "#FF3B3B" },
   { c: "Upgrades", t: "RAM and SSD upgrades: what fits your PC", kind: "ssd", accent: "#3B82F6" },
-  { c: "Building", t: "Gaming PC compatibility checklist", kind: "case", accent: "#8B5CF6" },
+  { c: "Building", t: "Gaming PC compatibility checklist", kind: "case", accent: "#E31E24" },
 ];
 
 const Arrow = () => <span className="cta-ico" aria-hidden="true">→</span>;
@@ -87,7 +87,6 @@ export default function Home() {
             <span>{check}Compatibility-checked builds</span>
           </div>
         </div>
-        <div className="cue" aria-hidden="true"><span /></div>
         {/* spec bar: one glass strip inside the hero, brand-red icons with a soft neon glow */}
         <div className="trust" aria-label="Why buy from Newcom">
           {trust.map((x) => (
