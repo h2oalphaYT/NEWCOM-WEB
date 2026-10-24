@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
-import { getItems, toProduct } from "@/lib/api";
+import { sampleProducts } from "@/lib/sampleProducts";
 import { menus, linkFor } from "@/lib/menu";
 import { site } from "@/lib/site";
 
@@ -11,9 +11,8 @@ const perks = [
   ["Dedicated support", `Call ${site.phone}`],
 ];
 
-export default async function Home() {
-  const res = await getItems({ row_count: 8 });
-  const products = res.ok ? res.payload.map(toProduct) : [];
+export default function Home() {
+  const products = sampleProducts;
 
   return (
     <div className="wrap">
@@ -38,11 +37,7 @@ export default async function Home() {
       </div>
 
       <h2 className="section-title">Latest in stock</h2>
-      {res.ok ? (
-        <div className="grid">{products.map((p, i) => <ProductCard key={p.id ?? i} p={p} />)}</div>
-      ) : (
-        <div className="notice">Products will appear here once the inventory API is running. ({res.message})</div>
-      )}
+      <div className="grid">{products.map((p) => <ProductCard key={p.id} p={p} />)}</div>
     </div>
   );
 }

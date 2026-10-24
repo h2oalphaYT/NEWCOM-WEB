@@ -20,7 +20,8 @@ export default function RootLayout({ children }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>
+      {/* browser extensions (Grammarly, ColorZilla, password managers) add attributes to <body> before React loads */}
+      <body suppressHydrationWarning>
         <Header />
         <main>{children}</main>
         <Footer />
