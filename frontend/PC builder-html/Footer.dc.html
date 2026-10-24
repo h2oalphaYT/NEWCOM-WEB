@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Newcom Footer</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--surface:#F6F6F7;--surface2:#EDEDEF;--ink:#181818;--ink2:#3F3F46;--mute:#585862;--mute2:#62626C;--line:#E6E6E9;--line2:#D1D1D6;--tint:#FDECEC;--tintline:#F5B8BA;--okbg:#F0FDF4;--okfg:#166534;--badbg:#FEF2F2;--warnbg:#FFFBEB;--err:#B91C1C;--link:#C4161C;--accfg:#C4161C;--heroA:#FBD5D6;--overlay:rgba(255,255,255,.97);color-scheme:light}
+:root[data-theme="dark"]{--bg:#0E0E10;--surface:#161618;--surface2:#1F1F23;--ink:#F4F4F5;--ink2:#D4D4D8;--mute:#A1A1AA;--mute2:#A1A1AA;--line:#2A2A2E;--line2:#3A3A40;--tint:#2A1214;--tintline:#6B2328;--okbg:#0E2A1B;--okfg:#86EFAC;--badbg:#32151A;--warnbg:#33260B;--err:#FCA5A5;--link:#FF6B70;--accfg:#FF8A8E;--heroA:#3A1618;--overlay:rgba(14,14,16,.97);color-scheme:dark}
+body{transition:background .25s,color .25s}
+
+body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg)}
+*{box-sizing:border-box}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+:focus-visible{outline:2px solid #60A5FA;outline-offset:2px}
+.fl{transition:color .2s}
+.fl:hover{color:#fff}
+</style>
+</helmet>
+<footer id="support" style="background:#101012;color:var(--line2)">
+<div style="max-width:1280px;margin:0 auto;padding:64px 32px 32px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:40px 32px">
+<div style="grid-column:span 1;min-width:200px">
+<a href="Main.dc.html" aria-label="Newcom home" style="display:inline-block"><img src="./assets/89365b4a72c0c1ed78331da0ea636b79.png" alt="Newcom: Enrich Life Through Technology" style="display:block;height:44px;width:auto"></a>
+<p style="margin:12px 0 0;font-size:14px;line-height:1.7;color:#94A3B8">Enrich Life Through Technology.</p>
+<p style="margin:16px 0 0;font-size:14px;line-height:1.8;color:#94A3B8">[VERIFIED ADDRESS]<br>[VERIFIED PHONE]<br>[VERIFIED EMAIL]<br>[OPENING HOURS]</p>
+</div>
+<div>
+<div style="font-weight:600;color:#fff;margin-bottom:14px;font-size:14px">Shop</div>
+<div style="display:flex;flex-direction:column;font-size:14px">
+<a class="fl" href="Category.dc.html" style="padding:7px 0">Laptops</a><a class="fl" href="Category.dc.html" style="padding:7px 0">Desktop PCs</a><a class="fl" href="Category.dc.html" style="padding:7px 0">Graphics cards</a><a class="fl" href="Category.dc.html" style="padding:7px 0">Monitors</a><a class="fl" href="Builder.dc.html" style="padding:7px 0">Build your PC</a>
+</div>
+</div>
+<div>
+<div style="font-weight:600;color:#fff;margin-bottom:14px;font-size:14px">Customer service</div>
+<div style="display:flex;flex-direction:column;font-size:14px">
+<a class="fl" href="Cart.dc.html" style="padding:7px 0">Cart and checkout</a><span style="padding:7px 0;color:#94A3B8">Warranty information [policy page to add]</span><span style="padding:7px 0;color:#94A3B8">Delivery and returns [policy page to add]</span><span style="padding:7px 0;color:#94A3B8">Payment information [policy page to add]</span>
+</div>
+</div>
+<div>
+<div style="font-weight:600;color:#fff;margin-bottom:14px;font-size:14px">Newsletter</div>
+<form onSubmit="{{submit}}" novalidate>
+<label for="fe" style="position:absolute;left:-9999px">Email address</label>
+<input id="fe" type="email" value="{{email}}" onInput="{{onEmail}}" aria-invalid="{{bad}}" aria-describedby="fmsg" placeholder="you@email.com" style="width:100%;height:46px;border-radius:8px;border:1px solid {{bc}};background:#1E293B;color:#fff;padding:0 14px;font-family:inherit;font-size:14px">
+<div id="fmsg" style="min-height:22px;margin-top:6px;font-size:13px;color:{{mc}}">{{msg}}</div>
+<label style="display:flex;gap:10px;font-size:12px;line-height:1.5;color:#94A3B8;margin-top:4px"><input type="checkbox" checked="{{consent}}" onChange="{{onConsent}}" style="width:18px;height:18px;flex:none;margin:0"><span>I agree to receive Newcom emails and can unsubscribe at any time.</span></label>
+<button type="submit" style="margin-top:14px;height:46px;padding:0 24px;border-radius:8px;border:0;background:#E31E24;color:#fff;font-weight:600;font-size:14px;cursor:pointer">Subscribe</button>
+</form>
+</div>
+</div>
+<div style="margin-top:48px;padding-top:24px;border-top:1px solid #1E293B;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;font-size:13px;color:#94A3B8">
+<span>© Newcom. Prototype with sample data. Brand names belong to their owners.</span>
+<span>Privacy policy and Terms [pages to add]</span>
+</div>
+</div>
+</footer>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":520}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { email: '', consent: false, msg: '', ok: false, bad: false }; }
+  renderVals() {
+    const s = this.state;
+    return {
+      email: s.email, consent: s.consent, msg: s.msg, bad: s.bad ? 'true' : 'false',
+      bc: s.bad ? '#F87171' : '#334155', mc: s.ok ? '#4ADE80' : '#FCA5A5',
+      onEmail: (e) => this.setState({ email: e.target.value, msg: '', bad: false }),
+      onConsent: (e) => this.setState({ consent: e.target.checked }),
+      submit: (e) => {
+        e.preventDefault();
+        const okMail = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(s.email.trim());
+        if (!okMail) return this.setState({ bad: true, ok: false, msg: 'Enter a valid email address.' });
+        if (!s.consent) return this.setState({ bad: false, ok: false, msg: 'Please tick the consent box to subscribe.' });
+        this.setState({ bad: false, ok: true, msg: 'Thanks. (Prototype: not sent to a mailing list yet.)' });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

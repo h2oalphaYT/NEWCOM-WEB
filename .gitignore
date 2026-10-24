@@ -1,0 +1,17 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# go
+*.exe
+backend/tmp/
+
+# node / next
+node_modules/
+frontend/.next/
+frontend/out/
+*.log
+
+# design export archive
+frontend/*.zip

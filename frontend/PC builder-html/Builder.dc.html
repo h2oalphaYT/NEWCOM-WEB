@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Newcom PC Builder</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--surface:#F6F6F7;--surface2:#EDEDEF;--ink:#181818;--ink2:#3F3F46;--mute:#585862;--mute2:#62626C;--line:#E6E6E9;--line2:#D1D1D6;--tint:#FDECEC;--tintline:#F5B8BA;--okbg:#F0FDF4;--okfg:#166534;--badbg:#FEF2F2;--warnbg:#FFFBEB;--err:#B91C1C;--link:#C4161C;--accfg:#C4161C;--heroA:#FBD5D6;--overlay:rgba(255,255,255,.97);color-scheme:light}
+:root[data-theme="dark"]{--bg:#0E0E10;--surface:#161618;--surface2:#1F1F23;--ink:#F4F4F5;--ink2:#D4D4D8;--mute:#A1A1AA;--mute2:#A1A1AA;--line:#2A2A2E;--line2:#3A3A40;--tint:#2A1214;--tintline:#6B2328;--okbg:#0E2A1B;--okfg:#86EFAC;--badbg:#32151A;--warnbg:#33260B;--err:#FCA5A5;--link:#FF6B70;--accfg:#FF8A8E;--heroA:#3A1618;--overlay:rgba(14,14,16,.97);color-scheme:dark}
+body{transition:background .25s,color .25s}
+
+body{margin:0;font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+*{box-sizing:border-box}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;color:inherit}
+:focus-visible{outline:2px solid #E31E24;outline-offset:2px}
+h1,h2,h3{margin:0;letter-spacing:-.03em}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes flash{0%{background:var(--tint)}100%{background:transparent}}
+.slot{transition:border-color .2s,box-shadow .2s}
+.slot:hover{border-color:var(--tintline)}
+.opt{transition:border-color .2s,background .2s}
+.opt:hover{border-color:#E31E24}
+.msg{animation:fadein .25s ease-out both}
+.tot{animation:flash .6s ease-out}
+.btn{transition:background .2s,transform .15s}.btn:active{transform:scale(.98)}
+.in{height:46px;border-radius:8px;border:1px solid var(--line2);padding:0 14px;font-size:15px;font-family:inherit;width:100%}
+@media (max-width:899px){[style*="position:sticky"]{position:static!important}}
+@media (prefers-reduced-motion:reduce){.msg,.tot,.slot,.opt{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="background:var(--bg);overflow-x:hidden">
+<dc-import name="Header" cart="0" hint-size="100%,150px"></dc-import>
+
+<div style="max-width:1280px;margin:0 auto;padding:32px 32px 96px">
+<nav aria-label="Breadcrumb" style="font-size:13px;color:var(--mute);display:flex;gap:8px"><a href="Main.dc.html">Home</a><span aria-hidden="true">/</span><span style="color:var(--ink);font-weight:600">PC builder</span></nav>
+<h1 style="margin-top:16px;font-size:40px;font-weight:800">Build your PC</h1>
+<p style="margin:8px 0 0;color:var(--mute);font-size:15px;max-width:640px">Choose a part for each slot. Compatibility is checked on every change. Sample parts and prices for demonstration; the rules run on the data shown for each part.</p>
+
+<div style="margin-top:36px;display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+<div style="flex:1 1 620px;min-width:0;display:grid;gap:12px">
+<sc-for list="{{slots}}" as="sl" hint-placeholder-count="8">
+<section class="slot" style="border:1px solid var(--line);border-radius:12px;background:var(--bg)">
+<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;flex-wrap:wrap">
+<span style="width:40px;height:40px;border-radius:10px;background:var(--tint);color:var(--link);display:flex;align-items:center;justify-content:center;flex:none;font-weight:800;font-size:14px">{{sl.n}}</span>
+<div style="flex:1 1 200px;min-width:0"><div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)">{{sl.label}}</div><div style="font-size:15px;font-weight:600;margin-top:2px">{{sl.chosen}}</div></div>
+<div style="font-weight:700;font-size:15px">{{sl.price}}</div>
+<button onClick="{{sl.toggle}}" aria-expanded="{{sl.exp}}" style="height:44px;padding:0 18px;border-radius:8px;border:1px solid {{sl.bb}};background:{{sl.bbg}};font-weight:600;font-size:14px;cursor:pointer">{{sl.btn}}</button>
+</div>
+<sc-if value="{{sl.open}}" hint-placeholder-val="{{false}}">
+<div class="msg" style="padding:0 20px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">
+<sc-for list="{{sl.opts}}" as="o" hint-placeholder-count="3">
+<button class="opt" onClick="{{o.pick}}" style="text-align:left;padding:14px;border-radius:10px;border:1px solid {{o.bc}};background:{{o.bg}};cursor:pointer">
+<span style="display:block;font-size:14px;font-weight:600;line-height:1.4">{{o.name}}</span>
+<span style="display:block;font-size:12px;color:var(--mute);margin-top:4px">{{o.meta}}</span>
+<span style="display:block;font-size:14px;font-weight:700;margin-top:8px">{{o.priceLabel}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+</section>
+</sc-for>
+</div>
+
+<aside style="flex:0 1 400px;min-width:min(100%,320px);position:sticky;top:150px;display:grid;gap:16px" aria-label="Build summary">
+<div style="border:1px solid var(--line);border-radius:12px;padding:22px;background:var(--surface)">
+<h2 style="font-size:18px;font-weight:700">Compatibility</h2>
+<div style="margin-top:12px;display:grid;gap:8px" aria-live="polite">
+<sc-for list="{{checks}}" as="c" hint-placeholder-count="6">
+<div class="msg" style="display:flex;gap:10px;padding:10px 12px;border-radius:8px;background:{{c.bg}};font-size:13px;line-height:1.5">
+<span aria-hidden="true" style="width:18px;height:18px;border-radius:9px;background:{{c.dot}};color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px">{{c.icon}}</span>
+<span><strong style="font-weight:700">{{c.t}}</strong><span style="display:block;color:var(--ink2)">{{c.s}}</span></span>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="border:1px solid var(--line);border-radius:12px;padding:22px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;font-weight:600">Estimated total</span><span class="tot" style="font-size:26px;font-weight:800;letter-spacing:-.02em">{{total}}</span></div>
+<div style="margin-top:6px;font-size:13px;color:var(--mute)">Estimated power draw: {{watts}}</div>
+<div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+<button class="btn" onClick="{{reset}}" style="height:48px;padding:0 20px;border-radius:8px;border:1px solid var(--line2);background:var(--bg);font-weight:600;cursor:pointer">Reset</button>
+<button class="btn" onClick="{{openQuote}}" style="flex:1;height:48px;padding:0 20px;border-radius:8px;border:0;background:#E31E24;color:#fff;font-weight:600;cursor:pointer">Request a quotation</button>
+</div>
+<sc-if value="{{quote}}" hint-placeholder-val="{{false}}">
+<form class="msg" onSubmit="{{sendQuote}}" novalidate="" style="margin-top:18px;border-top:1px solid var(--line);padding-top:18px;display:grid;gap:10px">
+<label style="font-size:13px;font-weight:600">Your name<input class="in" value="{{qn}}" onInput="{{onQn}}" aria-invalid="{{qnBad}}" style="margin-top:4px"></label>
+<label style="font-size:13px;font-weight:600">Mobile number<input class="in" value="{{qp}}" onInput="{{onQp}}" aria-invalid="{{qpBad}}" style="margin-top:4px"></label>
+<div role="alert" style="min-height:18px;font-size:12px;color:var(--err)">{{qErr}}</div>
+<button type="submit" class="btn" style="height:46px;border-radius:8px;border:0;background:#181818;color:#fff;font-weight:600;cursor:pointer">Send request</button>
+</form>
+</sc-if>
+<sc-if value="{{sent}}" hint-placeholder-val="{{false}}"><div role="status" class="msg" style="margin-top:14px;padding:12px;border-radius:8px;background:var(--okbg);color:var(--okfg);font-size:13px;line-height:1.5">Request recorded in this prototype. A live store would send your parts list to the Newcom team.</div></sc-if>
+</div>
+</aside>
+</div>
+</div>
+<dc-import name="Footer" hint-size="100%,520px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { pick: {}, open: 'cpu', quote: false, sent: false, qn: '', qp: '', qErr: '' }; }
+  parts() {
+    return {
+      cpu: [
+        { id: 'c1', name: 'AMD Ryzen 5 7600X', price: 89500, socket: 'AM5', tdp: 105 },
+        { id: 'c2', name: 'Intel Core i5-13400F', price: 74900, socket: 'LGA1700', tdp: 65 },
+        { id: 'c3', name: 'AMD Ryzen 7 7700X', price: 128000, socket: 'AM5', tdp: 105 }
+      ],
+      mb: [
+        { id: 'm1', name: 'ASUS TUF Gaming B650-PLUS', price: 86500, socket: 'AM5', ram: 'DDR5', form: 'ATX' },
+        { id: 'm2', name: 'MSI PRO B760M-A', price: 52000, socket: 'LGA1700', ram: 'DDR4', form: 'mATX' },
+        { id: 'm3', name: 'Gigabyte B650M DS3H', price: 59900, socket: 'AM5', ram: 'DDR5', form: 'mATX' }
+      ],
+      ram: [
+        { id: 'r1', name: 'Kingston Fury Beast 16GB DDR5-5600', price: 24800, ram: 'DDR5' },
+        { id: 'r2', name: 'Corsair Vengeance 16GB DDR4-3200', price: 19500, ram: 'DDR4' }
+      ],
+      gpu: [
+        { id: 'g1', name: 'ASUS Dual RTX 4060 8GB', price: 139900, len: 227, tdp: 115 },
+        { id: 'g2', name: 'MSI RTX 4070 Gaming X Slim 12GB', price: 279500, len: 308, tdp: 200 },
+        { id: 'g3', name: 'Gigabyte RTX 4080 SUPER Eagle 16GB', price: 395000, len: 340, tdp: 320 }
+      ],
+      sto: [
+        { id: 's1', name: 'Samsung 980 PRO 1TB NVMe', price: 46900, iface: 'M.2 NVMe' },
+        { id: 's2', name: 'Crucial MX500 1TB SATA', price: 28500, iface: 'SATA' }
+      ],
+      psu: [
+        { id: 'p1', name: 'Corsair CV550 550W', price: 24500, w: 550 },
+        { id: 'p2', name: 'Corsair RM750e 750W', price: 58200, w: 750 },
+        { id: 'p3', name: 'Corsair RM1000e 1000W', price: 82000, w: 1000 }
+      ],
+      cas: [
+        { id: 'k1', name: 'NZXT H510 Compact ATX', price: 34900, gpuMax: 381, cooler: 165, forms: ['ATX', 'mATX'] },
+        { id: 'k2', name: 'Cooler Master Q300L mATX', price: 21500, gpuMax: 360, cooler: 159, forms: ['mATX'] },
+        { id: 'k3', name: 'Lian Li Lancool 216', price: 48900, gpuMax: 392, cooler: 180, forms: ['ATX', 'mATX'] }
+      ],
+      col: [
+        { id: 'o1', name: 'DeepCool AK400', price: 9800, sockets: ['AM5', 'LGA1700'], h: 155 },
+        { id: 'o2', name: 'Noctua NH-D15', price: 38900, sockets: ['AM5', 'LGA1700'], h: 165 }
+      ]
+    };
+  }
+  renderVals() {
+    const s = this.state;
+    const P = this.parts();
+    const meta = {
+      cpu: (p) => p.socket + ' · ' + p.tdp + 'W', mb: (p) => p.socket + ' · ' + p.ram + ' · ' + p.form, ram: (p) => p.ram,
+      gpu: (p) => p.len + 'mm · ' + p.tdp + 'W', sto: (p) => p.iface, psu: (p) => p.w + 'W',
+      cas: (p) => 'GPU up to ' + p.gpuMax + 'mm · ' + p.forms.join('/'), col: (p) => p.h + 'mm tall · ' + p.sockets.join('/')
+    };
+    const order = [['cpu', 'Processor'], ['mb', 'Motherboard'], ['ram', 'Memory'], ['gpu', 'Graphics card'], ['sto', 'Storage'], ['psu', 'Power supply'], ['cas', 'Case'], ['col', 'CPU cooler']];
+    const sel = {};
+    order.forEach(([k]) => { sel[k] = P[k].find((p) => p.id === s.pick[k]); });
+    const lkr = (n) => 'LKR ' + n.toLocaleString('en-US');
+    const slots = order.map(([k, label], i) => ({
+      n: i + 1, label,
+      chosen: sel[k] ? sel[k].name : 'Not selected',
+      price: sel[k] ? lkr(sel[k].price) : '',
+      open: s.open === k, exp: s.open === k ? 'true' : 'false',
+      btn: s.open === k ? 'Close' : sel[k] ? 'Change' : 'Choose',
+      bb: sel[k] ? 'var(--line2)' : '#E31E24', bbg: sel[k] ? 'var(--bg)' : 'var(--tint)',
+      toggle: () => this.setState({ open: s.open === k ? '' : k }),
+      opts: P[k].map((p) => ({
+        name: p.name, meta: meta[k](p), priceLabel: lkr(p.price),
+        bc: s.pick[k] === p.id ? '#E31E24' : 'var(--line)', bg: s.pick[k] === p.id ? 'var(--tint)' : 'var(--bg)',
+        pick: () => this.setState({ pick: { ...s.pick, [k]: p.id }, open: '' })
+      }))
+    }));
+    const need = (...names) => 'Select ' + names.join(' and ') + ' to check.';
+    const rule = (t, parts, fn) => {
+      if (parts.some((p) => !p)) return { t, s: need(...[]), st: 'pending' };
+      return { t, ...fn() };
+    };
+    const { cpu, mb, ram, gpu, psu, cas, col, sto } = sel;
+    const watts = (cpu ? cpu.tdp : 0) + (gpu ? gpu.tdp : 0) + (cpu || gpu ? 100 : 0);
+    const raw = [
+      !cpu || !mb ? { t: 'CPU and motherboard socket', s: need('a processor', 'a motherboard'), st: 'pending' } : cpu.socket === mb.socket ? { t: 'CPU and motherboard socket', s: cpu.socket + ' matches.', st: 'ok' } : { t: 'CPU and motherboard socket', s: 'CPU is ' + cpu.socket + ' but the board is ' + mb.socket + '.', st: 'bad' },
+      !ram || !mb ? { t: 'Memory generation', s: need('memory', 'a motherboard'), st: 'pending' } : ram.ram === mb.ram ? { t: 'Memory generation', s: ram.ram + ' is supported.', st: 'ok' } : { t: 'Memory generation', s: 'Board takes ' + mb.ram + ' but the kit is ' + ram.ram + '.', st: 'bad' },
+      !gpu || !cas ? { t: 'GPU clearance', s: need('a graphics card', 'a case'), st: 'pending' } : gpu.len <= cas.gpuMax ? { t: 'GPU clearance', s: gpu.len + 'mm card fits the ' + cas.gpuMax + 'mm limit.', st: 'ok' } : { t: 'GPU clearance', s: 'Card is ' + gpu.len + 'mm; the case allows ' + cas.gpuMax + 'mm.', st: 'bad' },
+      !mb || !cas ? { t: 'Board size in case', s: need('a motherboard', 'a case'), st: 'pending' } : cas.forms.includes(mb.form) ? { t: 'Board size in case', s: mb.form + ' is supported.', st: 'ok' } : { t: 'Board size in case', s: mb.form + ' does not fit this case.', st: 'bad' },
+      !psu || (!cpu && !gpu) ? { t: 'Power supply', s: need('a power supply', 'a CPU or GPU'), st: 'pending' } : psu.w >= Math.ceil(watts * 1.4) ? { t: 'Power supply', s: 'About ' + watts + 'W estimated draw; ' + psu.w + 'W gives headroom.', st: 'ok' } : psu.w >= watts ? { t: 'Power supply', s: 'About ' + watts + 'W estimated draw; ' + psu.w + 'W leaves little headroom. Consider a larger unit.', st: 'warn' } : { t: 'Power supply', s: 'Estimated draw of ' + watts + 'W exceeds ' + psu.w + 'W.', st: 'bad' },
+      !col || !cpu ? { t: 'Cooler and CPU socket', s: need('a cooler', 'a processor'), st: 'pending' } : col.sockets.includes(cpu.socket) ? { t: 'Cooler and CPU socket', s: 'Mounting supports ' + cpu.socket + '.', st: 'ok' } : { t: 'Cooler and CPU socket', s: 'Cooler does not list ' + cpu.socket + '.', st: 'bad' },
+      !col || !cas ? { t: 'Cooler height in case', s: need('a cooler', 'a case'), st: 'pending' } : col.h <= cas.cooler ? { t: 'Cooler height in case', s: col.h + 'mm fits the ' + cas.cooler + 'mm limit.', st: 'ok' } : { t: 'Cooler height in case', s: 'Cooler is ' + col.h + 'mm; case allows ' + cas.cooler + 'mm.', st: 'bad' },
+      !sto || !mb ? { t: 'Storage interface', s: need('storage', 'a motherboard'), st: 'pending' } : { t: 'Storage interface', s: sto.iface + ': slot counts are not in the sample data, so this is not fully verified.', st: 'warn' }
+    ];
+    const sty = { ok: ['var(--okbg)', '#15803D', '✓'], bad: ['var(--badbg)', '#B91C1C', '!'], warn: ['var(--warnbg)', '#B45309', '?'], pending: ['var(--bg)', '#94A3B8', '–'] };
+    const checks = raw.map((r) => ({ t: r.t, s: r.s, bg: sty[r.st][0], dot: sty[r.st][1], icon: sty[r.st][2] }));
+    const total = order.reduce((a, [k]) => a + (sel[k] ? sel[k].price : 0), 0);
+    return {
+      slots, checks, total: lkr(total), watts: watts ? watts + 'W (CPU + GPU + 100W allowance)' : 'select a CPU or GPU',
+      reset: () => this.setState({ pick: {}, open: 'cpu', sent: false }),
+      quote: s.quote, sent: s.sent,
+      openQuote: () => this.setState({ quote: !s.quote, sent: false }),
+      qn: s.qn, qp: s.qp, qErr: s.qErr,
+      qnBad: s.qErr && !s.qn.trim() ? 'true' : 'false', qpBad: s.qErr && !/^(\+94|0)?7\d{8}$/.test(s.qp.replace(/[\s-]/g, '')) ? 'true' : 'false',
+      onQn: (e) => this.setState({ qn: e.target.value, qErr: '' }), onQp: (e) => this.setState({ qp: e.target.value, qErr: '' }),
+      sendQuote: (e) => {
+        e.preventDefault();
+        if (!s.qn.trim()) return this.setState({ qErr: 'Enter your name.' });
+        if (!/^(\+94|0)?7\d{8}$/.test(s.qp.replace(/[\s-]/g, ''))) return this.setState({ qErr: 'Enter a Sri Lankan mobile number.' });
+        if (!total) return this.setState({ qErr: 'Choose at least one part first.' });
+        this.setState({ quote: false, sent: true, qErr: '' });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
