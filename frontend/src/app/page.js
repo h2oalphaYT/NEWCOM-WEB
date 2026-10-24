@@ -88,18 +88,17 @@ export default function Home() {
           </div>
         </div>
         <div className="cue" aria-hidden="true"><span /></div>
+        {/* spec bar: one glass strip inside the hero, brand-red icons with a soft neon glow */}
+        <div className="trust" aria-label="Why buy from Newcom">
+          {trust.map((x) => (
+            <div key={x.t} className="trust-item">
+              <span className="trust-orb"><svg viewBox="0 0 24 24" aria-hidden="true">{glyph[x.g]}</svg></span>
+              <span className="trust-txt"><strong>{x.t}</strong><span>{x.s}</span></span>
+            </div>
+          ))}
+        </div>
       </section>
 
-      {/* trust ribbon floats over the bottom edge of the hero */}
-      <section className="trust" aria-label="Why buy from Newcom">
-        {trust.map((x, i) => (
-          <div key={x.t} className={`trust-card t-${x.hue} rvs`} style={{ animationDelay: `${i * 0.06}s` }}>
-            <span className="trust-orb"><svg viewBox="0 0 24 24" aria-hidden="true">{glyph[x.g]}</svg></span>
-            <strong>{x.t}</strong>
-            <span>{x.s}</span>
-          </div>
-        ))}
-      </section>
 
       <section className="sec">
         <SectionHead eyebrow="Shop by category" title="Everything for your setup," accent="in one place." href="/products" link="All products" />
