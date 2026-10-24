@@ -998,3 +998,10 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .hero .htxt { justify-content: flex-end; padding-top: 72px; padding-bottom: 44px; }
 .hero .trust { margin-bottom: 32px; }
 @media (max-width: 899px) { .hero .htxt { padding: 40px 16px 24px; } .hero .trust { margin-bottom: 14px; } }
+
+/* "Hardware for the way you work": animated network background */
+.paths-wrap { position: relative; overflow: hidden; isolation: isolate; }
+.paths-wrap::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(120% 80% at 50% 50%, transparent 40%, var(--surface) 100%); }
+.net-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
+.paths-wrap .path { background: color-mix(in srgb, var(--bg) 82%, transparent); }
+.paths-wrap .sec { position: relative; }

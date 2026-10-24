@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BrandMarquee from "@/components/BrandMarquee";
 import HeroVideo from "@/components/HeroVideo";
+import NetworkBg from "@/components/NetworkBg";
 import PcScene from "@/components/PcScene";
 import ProductArt from "@/components/ProductArt";
 import ProductCard from "@/components/ProductCard";
@@ -166,6 +167,7 @@ export default function Home() {
       </section>
 
       <section className="paths-wrap">
+        <NetworkBg />
         <div className="sec" style={{ paddingTop: 80, paddingBottom: 80 }}>
           <SectionHead eyebrow="Shop by need" title="Hardware for" accent="the way you work." />
           <div className="paths">
