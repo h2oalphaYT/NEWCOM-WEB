@@ -1141,3 +1141,21 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
   .fx-fade { background: linear-gradient(180deg, #050505 0%, rgba(5,5,5,.9) 55%, rgba(5,5,5,.2) 80%); }
 }
 @media (prefers-reduced-motion: reduce) { .fxb *, .fxb *::before, .fxb *::after { animation: none !important; } .fx-scr { clip-path: none; } .fx-boot { opacity: 0; } }
+
+/* footer scene: keep the whole setup inside the band between the links and the copyright line */
+.fx-persp { perspective: 1600px; perspective-origin: 76% 70%; }
+.fx-stage { left: min(76%, calc(100% - 360px)); top: auto; bottom: 200px; animation-name: fxSwayFit; }
+@keyframes fxSwayFit { from { transform: scale(.6) rotateX(-12deg) rotateY(-16deg); } to { transform: scale(.6) rotateX(-9deg) rotateY(12deg); } }
+.fx-wall { left: max(16px, calc((100% - 1280px) / 2 + 24px)); bottom: 96px; transform: scale(.85); transform-origin: left bottom; }
+.fx-cable { bottom: 26px; height: 150px; }
+.fx-brands { top: 34%; padding: 0; justify-content: space-evenly; }
+.ftr .ftr-bottom { margin-top: 300px; }
+@media (max-width: 1100px) { .fx-stage { left: min(70%, calc(100% - 300px)); } }
+@media (max-width: 899px) {
+  .ftr .ftr-bottom { margin-top: 230px; }
+  .fx-persp { perspective-origin: 50% 85%; }
+  .fx-stage { left: 50%; bottom: 140px; animation-name: fxSwayFitM; }
+  @keyframes fxSwayFitM { from { transform: scale(.4) rotateX(-12deg) rotateY(-14deg); } to { transform: scale(.4) rotateX(-9deg) rotateY(10deg); } }
+  .fx-wall { left: 12px; bottom: 70px; transform: scale(.6); }
+  .fx-brands { top: 60%; }
+}
