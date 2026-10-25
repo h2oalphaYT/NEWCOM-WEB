@@ -1005,3 +1005,47 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .net-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
 .paths-wrap .path { background: color-mix(in srgb, var(--bg) 82%, transparent); }
 .paths-wrap .sec { position: relative; }
+
+/* ---------- footer setup animation ---------- */
+.fscene { --t-plug: .2s; --t-power: 1.2s; --t-mon: 1.6s; --t-boot: 2.3s; --t-desk: 2.1s;
+  max-width: 1280px; margin: 0 auto; padding: 24px 32px 0; position: relative; }
+.fscene svg { display: block; width: 100%; height: auto; max-height: 300px; overflow: visible; }
+.fs-logo { font: 800 22px var(--font-sans), sans-serif; letter-spacing: .12em; }
+.fscene * { transform-box: fill-box; }
+
+/* start (unplugged) state */
+.fs-plug { transform: translateX(-34px); }
+.fs-spark, .fs-current, .fs-rgb, .fs-fanring, .fs-screen, .fs-kbdglow, .fs-deskglow { opacity: 0; }
+.fs-mon, .fs-kbd, .fs-mouse, .fs-head { opacity: 0; transform: translateY(26px); }
+.fs-current { stroke-dasharray: 10 18; }
+
+@keyframes fsPlug { to { transform: none; } }
+@keyframes fsSpark { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fsFlow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -112; } }
+@keyframes fsOn { to { opacity: 1; } }
+@keyframes fsDrop { 0% { opacity: 0; transform: translateY(26px); } 70% { opacity: 1; transform: translateY(-4px); } 100% { opacity: 1; transform: none; } }
+@keyframes fsBoot { 0% { opacity: 0; } 15% { opacity: .9; } 25% { opacity: .2; } 45% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes fsSpin { to { transform: rotate(360deg); } }
+@keyframes fsBreathe { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
+.fscene.on .fs-plug { animation: fsPlug .8s cubic-bezier(.32,.72,0,1) var(--t-plug) forwards; }
+.fscene.on .fs-spark { animation: fsSpark .5s ease-out 1s forwards; }
+.fscene.on .fs-current { animation: fsOn .3s ease-out 1s forwards, fsFlow 1.4s linear 1s infinite; }
+.fscene.on .fs-led { fill: #22C55E; transition: fill .3s 1s; filter: drop-shadow(0 0 4px #22C55E); }
+.fscene.on .fs-power { fill: #FF3B3F; transition: fill .2s var(--t-power); filter: drop-shadow(0 0 5px #FF3B3F); }
+.fscene.on .fs-rgb, .fscene.on .fs-fanring { animation: fsOn .4s ease-out var(--t-power) forwards, fsBreathe 2.4s ease-in-out calc(var(--t-power) + .4s) infinite; filter: drop-shadow(0 0 6px #E31E24); }
+.fscene.on .fs-fan { animation: fsSpin .5s linear var(--t-power) infinite; }
+.fscene.on .fs-deskglow { animation: fsOn 1s ease-out var(--t-power) forwards; }
+.fscene.on .fs-mon { animation: fsDrop .8s cubic-bezier(.32,.72,0,1) var(--t-mon) forwards; }
+.fscene.on .fs-screen { animation: fsBoot 1.1s ease-out var(--t-boot) forwards; }
+.fscene.on .fs-kbd { animation: fsDrop .7s cubic-bezier(.32,.72,0,1) var(--t-desk) forwards; }
+.fscene.on .fs-mouse { animation: fsDrop .7s cubic-bezier(.32,.72,0,1) calc(var(--t-desk) + .15s) forwards; }
+.fscene.on .fs-head { animation: fsDrop .7s cubic-bezier(.32,.72,0,1) calc(var(--t-desk) + .3s) forwards; }
+.fscene.on .fs-kbdglow { animation: fsOn .5s ease-out calc(var(--t-boot) + .4s) forwards, fsBreathe 2.6s ease-in-out calc(var(--t-boot) + .9s) infinite; filter: drop-shadow(0 0 5px #E31E24); }
+.fscene.on .fs-hled { filter: drop-shadow(0 0 4px #FF3B3F); }
+
+@media (max-width: 899px) { .fscene { padding: 16px 8px 0; } }
+.ftr { color: #C9C9D1; } /* footer links stay readable in both themes */
+@media (prefers-reduced-motion: reduce) {
+  .fscene.on * { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+}

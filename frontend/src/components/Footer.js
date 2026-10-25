@@ -1,9 +1,11 @@
 import Link from "next/link";
+import FooterScene from "@/components/FooterScene";
 import { site, whatsappLink } from "@/lib/site";
 
 export default function Footer() {
   return (
     <footer className="ftr" id="support">
+      <FooterScene />
       <div className="ftr-in">
         <div className="ftr-grid">
           <div>
