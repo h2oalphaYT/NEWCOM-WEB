@@ -15,3 +15,6 @@ frontend/out/
 
 # design export archive
 frontend/*.zip
+
+# admin uploads (banner media etc.)
+backend/uploads/

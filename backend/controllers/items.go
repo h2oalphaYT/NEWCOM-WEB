@@ -27,6 +27,9 @@ type WebsiteItem struct {
 	IsOnOffer           bool    `gorm:"column:IsOnOffer" json:"IsOnOffer"`
 	StockQuantity       float64 `gorm:"column:StockQuantity" json:"StockQuantity"`
 	StockStatus         string  `gorm:"column:StockStatus" json:"StockStatus"`
+	// filled from NEWCOM_WEB (website overrides / promotions)
+	Brand      string `gorm:"-" json:"Brand,omitempty"`
+	PromoBadge string `gorm:"-" json:"PromoBadge,omitempty"`
 }
 
 func fetchWebsiteItems(itemCode, search, category string, page, rows int) ([]WebsiteItem, error) {
@@ -46,7 +49,7 @@ func fetchWebsiteItems(itemCode, search, category string, page, rows int) ([]Web
 		it.CUnitCode = strings.TrimSpace(it.CUnitCode)
 		it.VcItemImage = imageURL(it.VcItemImage)
 	}
-	return items, nil
+	return applyWebOverrides(items), nil
 }
 
 // imageURL turns a stored path like "items\ITM001\ITM001_item_image.jpg" into a path on our own
