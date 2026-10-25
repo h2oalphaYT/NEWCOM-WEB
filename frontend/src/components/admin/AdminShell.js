@@ -32,7 +32,7 @@ function Login({ onDone }) {
         <img src="/brand/newcom-logo-dark.png" alt="" aria-hidden="true" className="adm-login-logo logo-d" />
         <h1>Website admin</h1>
         <p className="adm-mute">Sign in to manage banners, promotions, pre-built PCs and orders.</p>
-        <label className="adm-f">Email<input className="adm-in" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+        <label className="adm-f">Username or email<input className="adm-in" type="text" autoCapitalize="none" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
         <label className="adm-f">Password<input className="adm-in" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
         {err && <div className="adm-err" role="alert">{err}</div>}
         <button className="adm-btn adm-btn-primary" disabled={busy} style={{ width: "100%", marginTop: 8 }}>{busy ? "Signing in…" : "Sign in"}</button>
