@@ -95,8 +95,8 @@ jobs:
     environment: production
     env:
       DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/home/ubuntu/webnewcom' }}
-      BACKEND_SERVICE: ${{ vars.BACKEND_SERVICE || 'newcom-backend' }}
-      FRONTEND_SERVICE: ${{ vars.FRONTEND_SERVICE || 'newcom-frontend' }}
+      BACKEND_SERVICE: ${{ vars.BACKEND_SERVICE || 'webNewcom.service' }}
+      FRONTEND_SERVICE: ${{ vars.FRONTEND_SERVICE || 'webNewcom_frontend.service' }}
       SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
     steps:
       - uses: actions/download-artifact@v4
@@ -109,6 +109,14 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
+          missing=""
+          [ -n "$SSH_HOST" ] || missing="$missing SSH_HOST"
+          [ -n "$SSH_PRIVATE_KEY" ] || missing="$missing SSH_PRIVATE_KEY"
+          [ -n "${{ secrets.SSH_USER }}" ] || missing="$missing SSH_USER"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing. Add them under Settings > Secrets and variables > Actions > Secrets (Repository secrets), not Variables."
+            exit 1
+          fi
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key

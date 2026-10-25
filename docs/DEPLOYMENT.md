@@ -5,8 +5,8 @@ tests and deploys automatically (`.github/workflows/deploy.yml`).
 
 | Part | Address | Runs on the server | systemd service |
 |---|---|---|---|
-| Frontend (Next.js) | https://newcom.auralflix.com | `/home/ubuntu/webnewcom/frontend`, `npm run start` on port 9042 | `newcom-frontend` |
-| Backend (Go API) | https://api.newcom.auralflix.com | `/home/ubuntu/webnewcom/backend/backend` on port 9040 | `newcom-backend` |
+| Frontend (Next.js) | https://newcom.auralflix.com | `/home/ubuntu/webnewcom/frontend`, `npm run start` on port 9042 | `webNewcom_frontend.service` |
+| Backend (Go API) | https://api.newcom.auralflix.com | `/home/ubuntu/webnewcom/backend/backend` on port 9040 | `webNewcom.service` |
 
 Caddy terminates HTTPS and proxies to the two ports. Keep 9040 and 9042 closed in the EC2
 security group; only 22, 80 and 443 need to be open.
@@ -52,7 +52,7 @@ ssh ubuntu@54.255.127.30 chmod 600 /home/ubuntu/webnewcom/backend/.env
 
 Service files (names must match the `BACKEND_SERVICE` / `FRONTEND_SERVICE` variables below):
 
-`/etc/systemd/system/newcom-backend.service`
+`/etc/systemd/system/webNewcom.service`
 
 ```ini
 [Unit]
@@ -68,7 +68,7 @@ RestartSec=5s
 WantedBy=multi-user.target
 ```
 
-`/etc/systemd/system/newcom-frontend.service`
+`/etc/systemd/system/webNewcom_frontend.service`
 
 ```ini
 [Unit]
@@ -91,7 +91,7 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable newcom-backend newcom-frontend
+sudo systemctl enable webNewcom.service webNewcom_frontend.service
 ```
 
 Caddy (`/etc/caddy/Caddyfile`), then `sudo systemctl reload caddy`:
@@ -137,7 +137,7 @@ Repository → Settings → Secrets and variables → Actions:
 | `SSH_KNOWN_HOSTS` | optional; output of `ssh-keyscan 54.255.127.30` to pin the host key |
 
 Variables (optional, only if you use different names):
-`BACKEND_SERVICE` (default `newcom-backend`), `FRONTEND_SERVICE` (default `newcom-frontend`),
+`BACKEND_SERVICE` (default `webNewcom.service`), `FRONTEND_SERVICE` (default `webNewcom_frontend.service`),
 `DEPLOY_DIR` (default `/home/ubuntu/webnewcom`), `NEXT_PUBLIC_API_URL`
 (default `https://api.newcom.auralflix.com`).
 
@@ -156,8 +156,8 @@ Push to `main` (or Actions → Build and deploy → Run workflow). When it is gr
 ## Troubleshooting
 
 ```bash
-sudo journalctl -u newcom-backend -n 100 --no-pager
-sudo journalctl -u newcom-frontend -n 100 --no-pager
+sudo journalctl -u webNewcom.service -n 100 --no-pager
+sudo journalctl -u webNewcom_frontend.service -n 100 --no-pager
 sudo journalctl -u caddy -n 50 --no-pager
 ```
 
