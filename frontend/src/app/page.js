@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BrandMarquee from "@/components/BrandMarquee";
-import HeroVideo from "@/components/HeroVideo";
+import HeroSlides from "@/components/HeroSlides";
+import PrebuiltCard from "@/components/PrebuiltCard";
 import NetworkBg from "@/components/NetworkBg";
 import PcScene from "@/components/PcScene";
 import ProductArt from "@/components/ProductArt";
@@ -9,9 +10,7 @@ import Reviews from "@/components/Reviews";
 import ShowVideo from "@/components/ShowVideo";
 import { bestSellers, byIds, categoryHref, extraCategories, newArrivals } from "@/lib/catalog";
 import { site } from "@/lib/site";
-import { getItems, toProduct } from "@/lib/api";
-
-const check = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7" /></svg>;
+import { assetUrl, getBanners, getItems, getPrebuilts, toProduct } from "@/lib/api";
 
 // thin duotone glyphs for the trust ribbon (filled shape + hairline outline)
 const glyph = {
@@ -78,8 +77,26 @@ async function liveRows() {
   return pool.length >= 8 ? [pool.slice(0, 4), pool.slice(4, 8)] : null;
 }
 
+// built-in hero, shown when no "home-hero" banner is active in /admin
+const defaultSlide = {
+  eyebrow: "Computer hardware, Sri Lanka",
+  title: "Performance hardware, chosen with care.",
+  subtitle: `Laptops, gaming PCs and components with clear specs, honest stock status and real support. ${site.tagline}.`,
+  mediaType: "video", media: "/media/hero.mp4", poster: "/media/hero-poster.jpg",
+  b1: "Shop products", b1u: "/products", b2: "Build your PC", b2u: "/pc-builder",
+  ticks: ["Stock shown per item", "Compatibility-checked builds"],
+};
+const toSlide = (b) => ({
+  eyebrow: b.Eyebrow, title: b.Title, subtitle: b.Subtitle, mediaType: b.MediaType,
+  media: assetUrl(b.MediaUrl) || defaultSlide.media, poster: assetUrl(b.PosterUrl),
+  b1: b.ButtonText, b1u: b.ButtonUrl, b2: b.Button2Text, b2u: b.Button2Url,
+});
+
 export default async function Home() {
-  const live = await liveRows();
+  const [live, heroRes, stripRes, pbRes] = await Promise.all([liveRows(), getBanners("home-hero"), getBanners("home-strip"), getPrebuilts()]);
+  const slides = heroRes.ok && heroRes.payload?.length ? heroRes.payload.map(toSlide) : [defaultSlide];
+  const strips = stripRes.ok ? stripRes.payload || [] : [];
+  const builds = pbRes.ok ? [...(pbRes.payload || [])].sort((a, b) => (b.IsFeatured ? 1 : 0) - (a.IsFeatured ? 1 : 0)).slice(0, 4) : [];
   const best = live ? live[0] : byIds(bestSellers);
   const fresh = live ? live[1] : byIds(newArrivals);
   return (
@@ -87,21 +104,7 @@ export default async function Home() {
       <div className="sp" aria-hidden="true" />
 
       <section className="hero">
-        <HeroVideo />
-        <div className="hscrim" />
-        <div className="htxt">
-          <div className="h1a eyebrow-hero">Computer hardware, Sri Lanka</div>
-          <h1 className="h1a" style={{ animationDelay: ".08s" }}>Performance hardware, chosen with care.</h1>
-          <p className="h1a" style={{ animationDelay: ".16s" }}>Laptops, gaming PCs and components with clear specs, honest stock status and real support. {site.tagline}.</p>
-          <div className="h1a hero-cta" style={{ animationDelay: ".24s" }}>
-            <Link className="btn btn-primary btn-xl" href="/products">Shop products</Link>
-            <Link className="btn btn-ghost btn-xl" href="/pc-builder">Build your PC</Link>
-          </div>
-          <div className="h1a hero-ticks" style={{ animationDelay: ".32s" }}>
-            <span>{check}Stock shown per item</span>
-            <span>{check}Compatibility-checked builds</span>
-          </div>
-        </div>
+        <HeroSlides slides={slides} />
         {/* spec bar: one glass strip inside the hero, brand-red icons with a soft neon glow */}
         <div className="trust" aria-label="Why buy from Newcom">
           {trust.map((x) => (
@@ -113,6 +116,24 @@ export default async function Home() {
         </div>
       </section>
 
+      {strips.length > 0 && (
+        <section className="sec promo-strips">
+          {strips.map((b) => (
+            <Link key={b.BannerId} href={b.ButtonUrl || "/products"} className="promo-strip rvs">
+              {b.MediaUrl && (b.MediaType === "video"
+                ? <video className="promo-media" src={assetUrl(b.MediaUrl)} poster={assetUrl(b.PosterUrl)} autoPlay muted loop playsInline aria-hidden="true" />
+                : <img className="promo-media" src={assetUrl(b.MediaUrl)} alt="" loading="lazy" />)}
+              <span className="promo-shade" aria-hidden="true" />
+              <span className="promo-txt">
+                {b.Eyebrow && <em>{b.Eyebrow}</em>}
+                <strong>{b.Title}</strong>
+                {b.Subtitle && <span>{b.Subtitle}</span>}
+                {b.ButtonText && <span className="cta cta-light">{b.ButtonText}<Arrow /></span>}
+              </span>
+            </Link>
+          ))}
+        </section>
+      )}
 
       <section className="sec">
         <SectionHead eyebrow="Shop by category" title="Everything for your setup," accent="in one place." href="/products" link="All products" />
@@ -147,6 +168,13 @@ export default async function Home() {
         <SectionHead eyebrow="Best sellers" title="What Sri Lanka is" accent="building with." sub={live ? "In stock now at Newcom." : "Sample products and prices until the live catalogue is connected."} href="/products" link="View all" />
         <div className="pgrid">{best.map((p) => <ProductCard key={p.id} p={p} />)}</div>
       </section>
+
+      {builds.length > 0 && (
+        <section className="sec">
+          <SectionHead eyebrow="Pre-built PCs" title="Ready to run," accent="built by Newcom." sub="Tested, assembled and covered by warranty. Prices follow our live stock." href="/prebuilt" link="All pre-built PCs" />
+          <div className="pb-grid">{builds.map((b) => <PrebuiltCard key={b.PrebuiltId} b={b} />)}</div>
+        </section>
+      )}
 
       <section className="sec showcase">
         <Link href="/pc-builder" className="show show-gpu rvl">

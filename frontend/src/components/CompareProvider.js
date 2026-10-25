@@ -40,7 +40,7 @@ export function CompareProvider({ children }) {
   return (
     <CompareContext.Provider value={{ ids, items, toggle, has, clear }}>
       {children}
-      {items.length > 0 && path !== "/compare" && (
+      {items.length > 0 && path !== "/compare" && !path?.startsWith("/admin") && (
         <div className="cmp-tray no-print" role="region" aria-label="Compare list">
           <div className="cmp-items">
             {items.map((p) => (

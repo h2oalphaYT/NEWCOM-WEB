@@ -9,6 +9,7 @@ import { icons, productHref, products } from "@/lib/catalog";
 import MenuThumb from "@/components/MenuThumb";
 import { heroFor, menus, linkFor } from "@/lib/menu";
 import { lkr, site } from "@/lib/site";
+import { api } from "@/lib/apiClient";
 
 const kindIcon = { gpu: icons.gpu, cpu: icons.cpu, laptop: icons.lap, monitor: icons.mon };
 
@@ -16,6 +17,7 @@ export default function Header() {
   const router = useRouter();
   const { count } = useCart();
   const [ann, setAnn] = useState(true);
+  const [annText, setAnnText] = useState("Island-wide delivery · Manufacturer warranty on all products");
   const [open, setOpen] = useState(-1);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(-1);
@@ -29,6 +31,8 @@ export default function Header() {
 
   // close the mobile menu on navigation, lock page scroll while it is open
   useEffect(() => { setDrawer(false); setOpen(-1); }, [path]);
+  // announcement text is edited in /admin → Settings (key "announcement"; empty hides the bar)
+  useEffect(() => { api("GET", "/api/web/settings").then((r) => { if (r.ok && r.payload && "announcement" in r.payload) setAnnText(r.payload.announcement.trim()); }); }, []);
   useEffect(() => {
     document.documentElement.classList.toggle("no-scroll", drawer);
     if (!drawer) return;
@@ -104,10 +108,10 @@ export default function Header() {
   const isDark = theme === "dark";
 
   return (
-    <header ref={hdrRef} className={`hdr${ann ? " has-ann" : ""}`} onMouseLeave={() => setOpen(-1)}>
-      {ann && (
+    <header ref={hdrRef} className={`hdr${ann && annText ? " has-ann" : ""}`} onMouseLeave={() => setOpen(-1)}>
+      {ann && annText && (
         <div className="ann">
-          <span>Island-wide delivery · Manufacturer warranty on all products</span>
+          <span>{annText}</span>
           <button onClick={() => setAnn(false)} aria-label="Dismiss announcement">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
@@ -156,6 +160,9 @@ export default function Header() {
             <a className="ib dt-only" href={site.phoneHref} aria-label={`Call ${site.phone}`} title={`Call ${site.phone}`}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>
             </a>
+            <Link className="ib" href="/account" aria-label="My account" title="My account">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+            </Link>
             <Link href="/cart" className="call" aria-label={`Cart, ${count} items`}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" /></svg>
               <span className="dt-only">Cart</span> <span className={`cartn${bump ? " bump" : ""}`}>{count}</span>
@@ -222,6 +229,7 @@ export default function Header() {
               </div>
             ))}
             <div className="mnav-sec">Help</div>
+            <Link className="mnav-row" href="/account">My account and orders</Link>
             <Link className="mnav-row" href="/services">Repairs and services</Link>
             <Link className="mnav-row" href="/support/warranty">Warranty claims</Link>
             <Link className="mnav-row" href="/contact">Contact and directions</Link>

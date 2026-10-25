@@ -1,27 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProductImage from "@/components/ProductImage";
 import { useCart } from "@/components/CartProvider";
 import { productHref, resolve } from "@/lib/catalog";
 import { lkr } from "@/lib/site";
+import { api } from "@/lib/apiClient";
 
 const provinces = ["Western", "Central", "Southern", "Northern", "Eastern", "North Western", "North Central", "Uva", "Sabaragamuwa"];
 const methods = [
-  { k: "card", t: "Credit or debit card", s: "Paid securely on the bank's payment page. Card details never touch this site. [Needs gateway account]" },
-  { k: "koko", t: "KOKO: 3 interest-free instalments", s: "Pay a third today and the rest over two months. [Needs KOKO merchant account]" },
-  { k: "mintpay", t: "Mintpay: split into 3", s: "Interest-free split payments. [Needs Mintpay merchant account]" },
-  { k: "bank", t: "Direct bank transfer", s: "Bank details are shown after you place the order. [Confirm account details]" },
+  { k: "card", t: "Credit or debit card", s: "We confirm stock, then send you a secure payment link. Card details never touch this site." },
+  { k: "koko", t: "KOKO: 3 interest-free instalments", s: "Pay a third today and the rest over two months. We send the KOKO link after confirming stock." },
+  { k: "mintpay", t: "Mintpay: split into 3", s: "Interest-free split payments. We send the Mintpay link after confirming stock." },
+  { k: "bank", t: "Direct bank transfer", s: "We send our bank details with your order confirmation." },
   { k: "store", t: "Reserve and pay in store", s: "We hold the items for you at our Colombo showroom." },
 ];
 const empty = { name: "", email: "", phone: "", address: "", city: "", province: "", district: "" };
 
-function errorsFor(f) {
+function errorsFor(f, pickup) {
   const e = {};
   if (!f.name.trim()) e.name = "Enter your full name.";
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(f.email.trim())) e.email = "Enter a valid email address.";
   if (!/^(\+94|0)?7\d{8}$/.test(f.phone.replace(/[\s-]/g, ""))) e.phone = "Enter a Sri Lankan mobile number, e.g. 077 123 4567.";
+  if (pickup) return e;
   if (!f.address.trim()) e.address = "Enter your street address.";
   if (!f.city.trim()) e.city = "Enter your town or city.";
   if (!f.province) e.province = "Choose a province.";
@@ -29,7 +31,10 @@ function errorsFor(f) {
   return e;
 }
 
-// Cart and checkout from the redesign mockup. Checkout is a demo: nothing is sent or charged.
+const lineHref = (id) => (id.startsWith("PB-") ? `/prebuilt/${encodeURIComponent(id.slice(3))}` : productHref(id));
+
+// Cart and checkout. Placing an order saves it in the website database (prices are set by the
+// server from live stock); payment is arranged after Newcom confirms the order.
 export default function CartPage() {
   const cart = useCart();
   const [step, setStep] = useState("cart");
@@ -38,11 +43,43 @@ export default function CartPage() {
   const [touched, setTouched] = useState(false);
   const [pay, setPay] = useState("");
   const [payErr, setPayErr] = useState("");
+  const [dm, setDm] = useState("delivery");
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [order, setOrder] = useState(null);
+  const [fee, setFee] = useState(0);
+
+  // signed-in customers get their saved details; the delivery fee comes from the admin settings
+  useEffect(() => {
+    api("GET", "/api/web/account/me").then((r) => {
+      if (!r.ok || !r.payload) return;
+      const c = r.payload;
+      setF((cur) => ({ ...cur, name: cur.name || c.name, email: cur.email || c.email, phone: cur.phone || c.mobile, address: cur.address || c.address, city: cur.city || c.city, district: cur.district || c.district, province: cur.province || c.province }));
+    });
+    api("GET", "/api/web/settings").then((r) => r.ok && setFee(Number(r.payload?.delivery_fee) || 0));
+  }, []);
+
+  async function placeOrder() {
+    if (!pay) return setPayErr("Choose a payment method to continue.");
+    setBusy(true); setPayErr("");
+    const r = await api("POST", "/api/web/orders", {
+      name: f.name.trim(), email: f.email.trim(), mobile: f.phone.replace(/[\s-]/g, ""),
+      address: f.address, city: f.city, district: f.district, province: f.province,
+      deliveryMethod: dm, paymentMethod: pay, notes,
+      lines: lines.map((l) => ({ itemCode: l.id, name: l.p.name, qty: l.qty, price: l.p.price })),
+    });
+    setBusy(false);
+    if (!r.ok) return setPayErr(r.message || "We couldn't place the order. Please try again or call us.");
+    setOrder(r.payload);
+    setStep("done");
+    cart.clear();
+  }
 
   const lines = cart.lines.map((l) => ({ ...l, p: resolve(l) })).filter((l) => l.p);
   const count = lines.reduce((a, l) => a + l.qty, 0);
   const sub = lines.reduce((a, l) => a + l.qty * l.p.price, 0);
-  const errs = errorsFor(f);
+  const errs = errorsFor(f, dm === "pickup");
+  const deliveryFee = dm === "pickup" ? 0 : fee;
   const stepIdx = { cart: 0, details: 1, pay: 2, done: 3 }[step];
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
@@ -78,7 +115,7 @@ export default function CartPage() {
                 <div key={id} className="cline">
                   <div className="cline-art"><ProductImage p={p} /></div>
                   <div style={{ flex: "1 1 220px", minWidth: 0 }}>
-                    <Link href={productHref(id)} style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.4 }}>{p.name}</Link>
+                    <Link href={lineHref(id)} style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.4 }}>{p.name}</Link>
                     <div style={{ fontSize: 12, color: "var(--mute)", marginTop: 4 }}>SKU {id} · {lkr(p.price)} each</div>
                     <button className="cline-rm" onClick={() => { cart.remove(id); setMsg(""); }}>Remove</button>
                   </div>
@@ -98,9 +135,9 @@ export default function CartPage() {
           {step === "details" && (
             <form className="step" noValidate onSubmit={(e) => { e.preventDefault(); if (Object.keys(errs).length) setTouched(true); else { setTouched(false); setStep("pay"); } }}>
               <h2 style={{ fontSize: 22, fontWeight: 700 }}>Contact and delivery</h2>
-              <p className="sub" style={{ fontSize: 14, marginTop: 6 }}>Guest checkout. No account needed.</p>
+              <p className="sub" style={{ fontSize: 14, marginTop: 6 }}>Guest checkout, no account needed. <Link href="/account" style={{ color: "var(--link)", fontWeight: 600 }}>Sign in</Link> to fill in your saved details.</p>
               <div className="cform">
-                {fields.map(([k, label, ac, wide]) => {
+                {fields.filter(([k]) => dm === "delivery" || ["name", "email", "phone"].includes(k)).map(([k, label, ac, wide]) => {
                   const bad = touched && errs[k];
                   return (
                     <label key={k} className="fl" style={{ gridColumn: wide ? "1 / -1" : "auto" }}>{label}
@@ -118,7 +155,13 @@ export default function CartPage() {
                 })}
               </div>
               <div style={{ marginTop: 12, fontSize: 14, fontWeight: 600 }}>Delivery method</div>
-              <label className="pay" style={{ marginTop: 8 }}><input type="radio" name="dm" defaultChecked /><span><strong>Standard delivery</strong><span>Fee calculated once delivery rates are connected. Shown as LKR 0 in this prototype.</span></span></label>
+              <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
+                <label className="pay" style={{ borderColor: dm === "delivery" ? "#E31E24" : undefined }}><input type="radio" name="dm" checked={dm === "delivery"} onChange={() => setDm("delivery")} /><span><strong>Island-wide delivery</strong><span>{fee > 0 ? `${lkr(fee)} delivery fee.` : "Delivery charges, if any, are confirmed with your order."}</span></span></label>
+                <label className="pay" style={{ borderColor: dm === "pickup" ? "#E31E24" : undefined }}><input type="radio" name="dm" checked={dm === "pickup"} onChange={() => setDm("pickup")} /><span><strong>Collect from our Colombo showroom</strong><span>No delivery fee. We message you when it is ready.</span></span></label>
+              </div>
+              <label className="fl" style={{ marginTop: 16 }}>Order notes (optional)
+                <textarea className="in" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} style={{ height: "auto", paddingTop: 10 }} />
+              </label>
               <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" className="btn" onClick={() => setStep("cart")}>Back to cart</button>
                 <button type="submit" className="btn btn-primary">Continue to payment</button>
@@ -129,7 +172,7 @@ export default function CartPage() {
           {step === "pay" && (
             <div className="step">
               <h2 style={{ fontSize: 22, fontWeight: 700 }}>Payment method</h2>
-              <p className="sub" style={{ fontSize: 14, marginTop: 6 }}>Only methods Newcom supports will appear here. These are examples; no payment is taken in this prototype.</p>
+              <p className="sub" style={{ fontSize: 14, marginTop: 6 }}>Nothing is charged now. We confirm stock and price first, then send payment instructions for the method you pick.</p>
               <div role="radiogroup" aria-label="Payment method" style={{ marginTop: 20, display: "grid", gap: 10 }}>
                 {methods.map((m) => (
                   <label key={m.k} className="pay" style={{ borderColor: pay === m.k ? "#E31E24" : undefined, background: pay === m.k ? "var(--tint)" : undefined }}>
@@ -141,7 +184,7 @@ export default function CartPage() {
               {payErr && <div role="alert" className="err" style={{ marginTop: 10 }}>{payErr}</div>}
               <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" className="btn" onClick={() => setStep("details")}>Back</button>
-                <button className="btn btn-primary" onClick={() => { if (!pay) setPayErr("Choose a payment method to continue."); else { setStep("done"); cart.clear(); } }}>Place demo order</button>
+                <button className="btn btn-primary" onClick={placeOrder} disabled={busy}>{busy ? "Placing order…" : "Place order"}</button>
               </div>
             </div>
           )}
@@ -149,26 +192,28 @@ export default function CartPage() {
           {step === "done" && (
             <div className="step done">
               <div className="done-tick"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg></div>
-              <h2 style={{ marginTop: 20, fontSize: 26, fontWeight: 800 }}>Demo order recorded</h2>
-              <p>Thank you, {f.name.split(" ")[0] || "customer"}. Nothing was charged or sent. A live store would email a confirmation to {f.email || "your email"} and show the real order number and tracking here.</p>
+              <h2 style={{ marginTop: 20, fontSize: 26, fontWeight: 800 }}>Order {order?.orderNo} received</h2>
+              <p>Thank you, {f.name.split(" ")[0] || "customer"}. Your order total is <strong>{lkr(order?.total)}</strong>. Our team will call or WhatsApp you on {f.phone} to confirm stock and arrange payment{dm === "pickup" ? " and collection" : " and delivery"}.</p>
+              {order?.needsConfirmation && <p style={{ color: "#B45309" }}>Some items need their price confirmed by our team before payment.</p>}
+              <p className="sub" style={{ fontSize: 14 }}>Keep your order number. It also appears under <Link href="/account" style={{ color: "var(--link)", fontWeight: 600 }}>My account</Link> when you register with {f.email}.</p>
               <Link className="btn btn-dark" href="/" style={{ marginTop: 20 }}>Back to home</Link>
             </div>
           )}
         </div>
 
-        <aside className="summary card" style={{ padding: 24, background: "var(--surface)" }} aria-label="Order summary">
+        {step !== "done" && <aside className="summary card" style={{ padding: 24, background: "var(--surface)" }} aria-label="Order summary">
           <h2 style={{ fontSize: 18, fontWeight: 700 }}>Order summary</h2>
           <div className="sumrows">
             <div><span>Subtotal ({count} items)</span><span key={sub} className="tot-sm">{lkr(sub)}</span></div>
             <div><span>Discount</span><span>LKR 0</span></div>
-            <div><span>Delivery</span><span>Calculated at next step</span></div>
-            <div className="sumtotal"><span>Total</span><span key={`t${sub}`} className="tot">{lkr(sub)}</span></div>
+            <div><span>Delivery</span><span>{step === "cart" ? "Next step" : deliveryFee ? lkr(deliveryFee) : dm === "pickup" ? "Collect in store" : "Confirmed with order"}</span></div>
+            <div className="sumtotal"><span>Total</span><span key={`t${sub}`} className="tot">{lkr(sub + (step === "cart" ? 0 : deliveryFee))}</span></div>
           </div>
           {step === "cart" && (
             <button className="btn btn-primary" style={{ marginTop: 20, width: "100%", height: 52, background: lines.length ? undefined : "#94A3B8", cursor: lines.length ? "pointer" : "not-allowed" }} disabled={!lines.length} onClick={() => setStep("details")}>Proceed to checkout</button>
           )}
-          <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: "var(--mute)" }}>Sample prices. Delivery and taxes are shown only when calculated by the store.</p>
-        </aside>
+          <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: "var(--mute)" }}>Final prices are checked against live stock when you place the order.</p>
+        </aside>}
       </div>
     </div>
   );

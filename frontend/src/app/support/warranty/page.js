@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { site } from "@/lib/site";
+import { api } from "@/lib/apiClient";
 
-// Warranty claim (RMA) portal. Prototype: tickets are kept in this browser only. Email
-// confirmations and real status updates need the backend and a mail service.
+// Warranty claim (RMA) portal. Claims are saved in the website database and staff move them through
+// the stages in /admin; customers track with ticket number + mobile. Ticket numbers are also kept
+// in this browser so returning customers can tap them.
 const KEY = "newcom-rma";
 const STAGES = ["Submitted", "Received at service centre", "Diagnosis", "Repair or replacement", "Ready for collection"];
 const blank = { name: "", phone: "", email: "", invoice: "", product: "", serial: "", issue: "", branch: "" };
@@ -17,13 +19,16 @@ export default function WarrantyPortal() {
   const [tickets, setTickets] = useState([]);
   const [done, setDone] = useState(null);
   const [lookup, setLookup] = useState("");
+  const [lookMobile, setLookMobile] = useState("");
   const [found, setFound] = useState(undefined);
+  const [busy, setBusy] = useState(false);
+  const [apiErr, setApiErr] = useState("");
 
   useEffect(() => { try { setTickets(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch {} }, []);
   const persist = (list) => { setTickets(list); try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {} };
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
     const er = {};
     if (!f.name.trim()) er.name = "Enter your name.";
@@ -35,16 +40,29 @@ export default function WarrantyPortal() {
     if (f.issue.trim().length < 10) er.issue = "Describe the problem in a sentence or two.";
     setErrs(er);
     if (Object.keys(er).length) return;
-    const id = `RMA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 90000) + 10000)}`;
-    const t = { id, ...f, stage: 0, created: new Date().toISOString() };
-    persist([t, ...tickets]);
+    setBusy(true); setApiErr("");
+    const r = await api("POST", "/api/web/claims", { name: f.name.trim(), mobile: f.phone.replace(/[\s-]/g, ""), email: f.email.trim(), invoice: f.invoice, product: f.product, serial: f.serial, issue: f.issue, branch: f.branch });
+    setBusy(false);
+    if (!r.ok) return setApiErr(r.message || "We couldn't submit the claim. Please call us.");
+    const t = { id: r.payload.ticket, mobile: f.phone, product: f.product, serial: f.serial, branch: f.branch, email: f.email, stage: 0, created: new Date().toISOString() };
+    persist([{ id: t.id, mobile: t.mobile }, ...tickets.filter((x) => x.id !== t.id)]);
     setDone(t);
     setF({ ...blank, branch: site.branches[0] });
   }
 
+  async function lookUp(id, mobile) {
+    setBusy(true); setApiErr("");
+    const r = await api("GET", `/api/web/claims/${encodeURIComponent(id.trim())}?mobile=${encodeURIComponent(mobile.replace(/[\s-]/g, ""))}`);
+    setBusy(false);
+    if (!r.ok) { setFound(null); if (r.status !== 404) setApiErr(r.message || "Couldn't check the claim right now."); return; }
+    const c = r.payload;
+    setFound({ id: c.TicketNo, product: c.Product, serial: c.SerialNo, branch: c.Branch, stage: Number(c.Stage) || 0, status: c.Status, created: c.CreatedAt, updated: c.UpdatedAt });
+  }
+
   function track(e) {
     e.preventDefault();
-    setFound(tickets.find((t) => t.id.toLowerCase() === lookup.trim().toLowerCase()) || null);
+    if (!lookup.trim() || !lookMobile.trim()) { setApiErr("Enter the ticket number and the mobile number used for the claim."); return; }
+    lookUp(lookup, lookMobile);
   }
 
   const field = (k, label, props = {}) => (
@@ -75,11 +93,11 @@ export default function WarrantyPortal() {
         <div className="done step" style={{ marginTop: 24 }}>
           <div className="done-tick">✓</div>
           <h2 style={{ marginTop: 16, fontSize: 24, fontWeight: 800 }}>Claim {done.id} submitted</h2>
-          <p>Keep this number to track your claim. Bring the product and invoice to our {done.branch} branch. In this prototype the claim is saved in this browser only; the live site will email a confirmation{done.email ? ` to ${done.email}` : ""}.</p>
+          <p>Keep this number to track your claim with your mobile number. Bring the product and invoice to our {done.branch} branch. Our service team will contact you on {done.mobile}.</p>
           <Timeline t={done} />
           <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
             <button className="btn" onClick={() => setDone(null)}>Submit another</button>
-            <button className="btn btn-dark" onClick={() => { setTab("track"); setLookup(done.id); setFound(done); }}>Track this claim</button>
+            <button className="btn btn-dark" onClick={() => { setTab("track"); setLookup(done.id); setLookMobile(done.mobile); setFound(done); }}>Track this claim</button>
           </div>
         </div>
       ) : (
@@ -97,7 +115,8 @@ export default function WarrantyPortal() {
             </label>
             {field("issue", "What is the problem?", { area: true, wide: true })}
           </div>
-          <button type="submit" className="btn btn-primary" style={{ marginTop: 8 }}>Submit claim</button>
+          {apiErr && <div role="alert" className="err" style={{ marginTop: 8 }}>{apiErr}</div>}
+          <button type="submit" className="btn btn-primary" style={{ marginTop: 8 }} disabled={busy}>{busy ? "Submitting…" : "Submit claim"}</button>
         </form>
       ))}
 
@@ -105,22 +124,25 @@ export default function WarrantyPortal() {
         <div style={{ marginTop: 24, maxWidth: 720 }}>
           <form onSubmit={track} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <label className="sr-only" htmlFor="rma">Ticket number</label>
-            <input id="rma" className="in" style={{ flex: "1 1 240px", width: "auto" }} placeholder="e.g. RMA-2026-12345" value={lookup} onChange={(e) => setLookup(e.target.value)} />
-            <button className="btn btn-primary">Track</button>
+            <input id="rma" className="in" style={{ flex: "1 1 220px", width: "auto" }} placeholder="Ticket, e.g. RMA-2026-12345" value={lookup} onChange={(e) => setLookup(e.target.value)} />
+            <label className="sr-only" htmlFor="rma-m">Mobile number</label>
+            <input id="rma-m" className="in" style={{ flex: "1 1 180px", width: "auto" }} placeholder="Mobile number" inputMode="tel" value={lookMobile} onChange={(e) => setLookMobile(e.target.value)} />
+            <button className="btn btn-primary" disabled={busy}>{busy ? "Checking…" : "Track"}</button>
           </form>
-          {found === null && <div className="notice">No claim found with that number on this device. Check the number or contact us.</div>}
+          {apiErr && <div role="alert" className="err" style={{ marginTop: 8 }}>{apiErr}</div>}
+          {found === null && <div className="notice">No claim found with that ticket and mobile number. Check both, or contact us.</div>}
           {found && (
             <div className="card step" style={{ marginTop: 16, padding: 24 }}>
               <div className="slot-label">{found.id} · {found.branch}</div>
               <h2 style={{ fontSize: 20, fontWeight: 700, marginTop: 6 }}>{found.product}</h2>
-              <p className="sub" style={{ fontSize: 14 }}>Serial {found.serial} · submitted {new Date(found.created).toLocaleDateString("en-GB")}</p>
+              <p className="sub" style={{ fontSize: 14 }}>Serial {found.serial} · submitted {new Date(found.created).toLocaleDateString("en-GB")}{found.status && found.status !== "open" ? ` · ${found.status}` : ""}</p>
               <Timeline t={found} />
             </div>
           )}
           {tickets.length > 0 && (
             <div style={{ marginTop: 24 }}>
               <div className="slot-label">Claims on this device</div>
-              <div className="chips">{tickets.map((t) => <button key={t.id} className="chip" onClick={() => { setLookup(t.id); setFound(t); }}>{t.id}</button>)}</div>
+              <div className="chips">{tickets.map((t) => <button key={t.id} className="chip" onClick={() => { setLookup(t.id); setLookMobile(t.mobile || t.phone || ""); if (t.mobile || t.phone) lookUp(t.id, t.mobile || t.phone); }}>{t.id}</button>)}</div>
             </div>
           )}
         </div>

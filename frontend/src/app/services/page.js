@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { site, whatsappLink } from "@/lib/site";
+import { api } from "@/lib/apiClient";
 
-// Repair and customisation services with an enquiry form that opens WhatsApp with the details.
+// Repair and customisation services. Bookings are saved for the service team (/admin → Service bookings),
+// with WhatsApp as a quick follow-up.
 const services = [
   { k: "repair", t: "Hardware repairs", s: "Laptops and desktops that won't power on, overheat or crash.", d: "M14.7 6.3a4 4 0 0 1-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 1 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z" },
   { k: "board", t: "Motherboard diagnostics", s: "Component-level testing for boards, power delivery and BIOS faults.", d: "M7 7h10v10H7zM10 10h4v4h-4zM9 3v4M15 3v4M9 17v4M15 17v4" },
@@ -17,23 +19,30 @@ export default function Services() {
   const [svc, setSvc] = useState("repair");
   const [f, setF] = useState({ name: "", phone: "", device: "", date: "", note: "", branch: site.branches[0] });
   const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(null);
   const set = (k) => (e) => { setF({ ...f, [k]: e.target.value }); setErr(""); };
 
-  function send(e) {
+  async function send(e) {
     e.preventDefault();
     if (!f.name.trim()) return setErr("Enter your name.");
     if (!/^(\+94|0)?7\d{8}$/.test(f.phone.replace(/[\s-]/g, ""))) return setErr("Enter a Sri Lankan mobile number.");
     if (!f.device.trim()) return setErr("Tell us which device or PC it is.");
     const s = services.find((x) => x.k === svc).t;
-    const text = `Hi Newcom, I'd like to book: ${s}.\nDevice: ${f.device}\nPreferred date: ${f.date || "any"}\nBranch: ${f.branch}\nDetails: ${f.note || "-"}\nName: ${f.name}\nMobile: ${f.phone}`;
-    window.open(whatsappLink(text), "_blank", "noopener,noreferrer");
+    setBusy(true);
+    const r = await api("POST", "/api/web/bookings", { service: s, name: f.name.trim(), mobile: f.phone.replace(/[\s-]/g, ""), device: f.device, date: f.date, branch: f.branch, details: f.note });
+    setBusy(false);
+    if (!r.ok) return setErr(r.message || "We couldn't save the booking. Please send it on WhatsApp instead.");
+    setSent({ s, ...f });
+    setF({ ...f, device: "", date: "", note: "" });
   }
+  const waText = (x) => `Hi Newcom, I booked: ${x.s}.\nDevice: ${x.device}\nPreferred date: ${x.date || "any"}\nBranch: ${x.branch}\nName: ${x.name}\nMobile: ${x.phone}`;
 
   return (
     <div className="wrap">
       <nav aria-label="Breadcrumb" className="crumbs"><Link href="/">Home</Link><span aria-hidden="true">/</span><strong>Repairs and services</strong></nav>
       <h1 className="page-title">Repairs and services</h1>
-      <p className="lead">Book a repair, diagnostics or a custom cooling build. Our technicians confirm the time with you on WhatsApp.</p>
+      <p className="lead">Book a repair, diagnostics or a custom cooling build. Our technicians call you to confirm the time.</p>
 
       <div className="cats" style={{ marginTop: 28 }}>
         {services.map((x) => (
@@ -55,7 +64,18 @@ export default function Services() {
           <label className="fl" style={{ gridColumn: "1 / -1" }}>Details<textarea className="in ta" rows={3} value={f.note} onChange={set("note")} /></label>
         </div>
         <div role="alert" className="err" style={{ minHeight: 18 }}>{err}</div>
-        <button type="submit" className="btn btn-primary" style={{ marginTop: 6 }}>Send booking on WhatsApp</button>
+        {sent ? (
+          <div className="notice" role="status" style={{ marginTop: 6 }}>
+            Thanks, {sent.name.split(" ")[0]}. Your {sent.s.toLowerCase()} booking is saved and our technicians will call you on {sent.phone} to confirm the time.{" "}
+            <a href={whatsappLink(waText(sent))} target="_blank" rel="noopener noreferrer" style={{ color: "var(--link)", fontWeight: 600 }}>Message us on WhatsApp</a> if it is urgent.
+            <div><button type="button" className="btn" style={{ marginTop: 12 }} onClick={() => setSent(null)}>Book another</button></div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 6 }}>
+            <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? "Booking…" : "Book this service"}</button>
+            <a className="btn" href={whatsappLink(`Hi Newcom, I'd like to ask about ${services.find((x) => x.k === svc).t.toLowerCase()}.`)} target="_blank" rel="noopener noreferrer">Ask on WhatsApp</a>
+          </div>
+        )}
       </form>
     </div>
   );

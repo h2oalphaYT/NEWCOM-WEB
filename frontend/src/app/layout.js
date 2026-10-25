@@ -6,6 +6,7 @@ import { CartProvider } from "@/components/CartProvider";
 import { CompareProvider } from "@/components/CompareProvider";
 import MobileTabBar from "@/components/MobileTabBar";
 import ScrollTop from "@/components/ScrollTop";
+import SiteChrome from "@/components/SiteChrome";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -27,11 +28,9 @@ export default function RootLayout({ children }) {
         <Script id="theme-init" strategy="beforeInteractive">{themeScript}</Script>
         <CartProvider>
           <CompareProvider>
-            <Header />
-            <main>{children}</main>
-            <Footer />
-            <MobileTabBar />
-            <ScrollTop />
+            <SiteChrome header={<Header />} footer={<Footer />} extras={<><MobileTabBar /><ScrollTop /></>}>
+              {children}
+            </SiteChrome>
           </CompareProvider>
         </CartProvider>
       </body>
