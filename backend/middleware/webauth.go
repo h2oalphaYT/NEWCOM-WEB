@@ -11,7 +11,7 @@ import (
 // AllowedOrigins is the list of website origins allowed to call the API with cookies.
 func AllowedOrigins() []string {
 	var out []string
-	for _, v := range []string{os.Getenv("WEB_ORIGIN"), os.Getenv("consumer_origin"), "http://localhost:3000"} {
+	for _, v := range []string{os.Getenv("WEB_ORIGIN"), os.Getenv("consumer_origin"), "http://localhost:3000", "http://127.0.0.1:3000"} {
 		for _, o := range strings.Split(v, ",") {
 			if o = strings.TrimRight(strings.TrimSpace(o), "/"); o != "" {
 				out = append(out, o)

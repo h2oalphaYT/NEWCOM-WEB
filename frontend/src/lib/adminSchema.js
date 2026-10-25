@@ -47,8 +47,8 @@ export const schemas = {
   },
   promotions: {
     title: "Promotions", singular: "promotion", pk: "PromotionId",
-    help: "Website-only offers. The discount applies to the listed inventory items while the promotion is active; a special price on an item overrides the discount.",
-    list: ["Name", "BadgeText", "DiscountType", "DiscountValue", "IsActive", "StartDate", "EndDate"],
+    help: "Website-only offers. Without a promo code, the discount applies automatically to the listed items while the promotion is active (a special price on an item overrides it). With a promo code, it applies only when the customer enters the code at checkout: to the listed items, or to the whole cart when no items are listed. Tick 'Show in top bar' to advertise the code in the announcement bar.",
+    list: ["Name", "PromoCode", "BadgeText", "DiscountType", "DiscountValue", "ShowInBar", "IsActive", "EndDate"],
     fields: [
       { key: "Name", required: true },
       { key: "Slug", required: true, slugFrom: "Name" },
@@ -56,6 +56,9 @@ export const schemas = {
       { key: "BadgeText", label: "Badge on product cards", placeholder: "10% off" },
       { key: "DiscountType", type: "select", options: ["percent", "fixed", "price"], required: true, default: "percent" },
       { key: "DiscountValue", type: "money", label: "Discount (percent, LKR off, or fixed LKR price)" },
+      { key: "PromoCode", label: "Promo code (optional, e.g. NEWCOM5)", upper: true },
+      { key: "MinOrder", type: "money", label: "Minimum order for the code (LKR, optional)" },
+      { key: "ShowInBar", label: "Show the code in the top bar", type: "bool" },
       { key: "ImageUrl", label: "Promotion image", type: "media" },
       { key: "StartDate", type: "date" }, { key: "EndDate", type: "date" },
       { key: "SortOrder", type: "number", default: 0 },
@@ -147,7 +150,7 @@ export const schemas = {
     help: "Website orders. Prices were set by the server from the live inventory at checkout.",
     list: ["OrderNo", "Name", "Mobile", "Total", "PaymentMethod", "Status", "CreatedAt"],
     fields: [
-      ...["OrderNo", "Name", "Email", "Mobile", "Address", "City", "District", "Province", "DeliveryMethod", "PaymentMethod", "SubTotal", "DeliveryFee", "Total", "Notes", "CreatedAt"].map((k) => ({ key: k, readOnly: true, type: ["SubTotal", "DeliveryFee", "Total"].includes(k) ? "money" : k === "CreatedAt" ? "date" : "text" })),
+      ...["OrderNo", "Name", "Email", "Mobile", "Address", "City", "District", "Province", "DeliveryMethod", "PaymentMethod", "SubTotal", "PromoCode", "Discount", "DeliveryFee", "Total", "Notes", "CreatedAt"].map((k) => ({ key: k, readOnly: true, type: ["SubTotal", "Discount", "DeliveryFee", "Total"].includes(k) ? "money" : k === "CreatedAt" ? "date" : "text" })),
       { key: "Status", type: "select", options: ["new", "confirmed", "paid", "shipped", "completed", "cancelled"], required: true },
       { key: "AdminNote", label: "Internal note", type: "textarea" },
     ],

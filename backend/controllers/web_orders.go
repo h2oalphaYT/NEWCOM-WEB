@@ -20,13 +20,70 @@ type orderIn struct {
 	Province       string `json:"province"`
 	DeliveryMethod string `json:"deliveryMethod"`
 	PaymentMethod  string `json:"paymentMethod"`
-	Notes          string `json:"notes"`
-	Lines          []struct {
-		ItemCode string  `json:"itemCode"`
-		Name     string  `json:"name"`
-		Qty      int     `json:"qty"`
-		Price    float64 `json:"price"` // only used for items the server cannot price (sample/demo items)
-	} `json:"lines"`
+	Notes          string        `json:"notes"`
+	PromoCode      string        `json:"promoCode"`
+	Lines          []orderLineIn `json:"lines"`
+}
+
+type orderLineIn struct {
+	ItemCode string  `json:"itemCode"`
+	Name     string  `json:"name"`
+	Qty      int     `json:"qty"`
+	Price    float64 `json:"price"` // only used for items the server cannot price (sample/demo items)
+}
+
+type cartLine struct {
+	code, name string
+	price      float64
+	qty        int
+	unverified bool
+}
+
+// priceCart prices every line from the live inventory / pre-built PCs. Items the server cannot
+// price (sample PC-builder parts) are kept and flagged so the team confirms them.
+func priceCart(in []orderLineIn) (lines []cartLine, sub float64, unverified bool, problem string) {
+	for _, l := range in {
+		code := clip(l.ItemCode, 40)
+		qty := l.Qty
+		if code == "" || qty < 1 || qty > 20 {
+			return nil, 0, false, "Check the quantities in your cart"
+		}
+		ln := cartLine{code: code, qty: qty}
+		if strings.HasPrefix(code, "PB-") {
+			rows := []map[string]interface{}{}
+			WDB.Raw("SELECT PrebuiltId, Name, Price FROM dbo.WebPrebuiltPc WHERE IsActive = 1 AND Slug = ?", strings.TrimPrefix(code, "PB-")).Scan(&rows)
+			if len(rows) == 1 {
+				pricePrebuilt(rows[0])
+				ln.name = fmt.Sprint(rows[0]["Name"])
+				ln.price, _ = strconv.ParseFloat(fmt.Sprint(rows[0]["Price"]), 64)
+			}
+		} else if DB != nil {
+			if items, err := fetchWebsiteItems(code, "", "", 1, 1); err == nil && len(items) == 1 && items[0].CItemCode == code {
+				it := items[0]
+				if it.StockStatus == "Out of Stock" {
+					return nil, 0, false, it.VcItemDescrition + " is out of stock"
+				}
+				ln.name = it.VcItemDescrition
+				ln.price = it.SellingPrice
+				if it.SpecialPrice > 0 && it.SpecialPrice < it.SellingPrice {
+					ln.price = it.SpecialPrice
+				}
+			}
+		}
+		if ln.name == "" {
+			ln.name = clip(l.Name, 230)
+			if ln.name == "" {
+				return nil, 0, false, "Unknown item in cart"
+			}
+			ln.name += " (price to be confirmed)"
+			ln.price = l.Price
+			ln.unverified = true
+			unverified = true
+		}
+		sub += ln.price * float64(qty)
+		lines = append(lines, ln)
+	}
+	return lines, sub, unverified, ""
 }
 
 var payMethods = map[string]bool{"card": true, "koko": true, "mintpay": true, "bank": true, "store": true}
@@ -58,57 +115,21 @@ func CreateOrder(c *fiber.Ctx) error {
 		}
 	}
 
-	type line struct {
-		code, name string
-		price      float64
-		qty        int
-		unverified bool
+	if len(in.Lines) > 50 {
+		return bad(c, "Your cart is too large; please call us for bulk orders")
 	}
-	var lines []line
-	unverified := false
-	sub := 0.0
-	for _, l := range in.Lines {
-		code := clip(l.ItemCode, 40)
-		qty := l.Qty
-		if code == "" || qty < 1 || qty > 20 {
-			return bad(c, "Check the quantities in your cart")
+	lines, sub, unverified, problem := priceCart(in.Lines)
+	if problem != "" {
+		return bad(c, problem)
+	}
+	var discount float64
+	var promoCode *string
+	if code := normCode(in.PromoCode); code != "" {
+		d, msg := applyPromoCode(code, lines, sub)
+		if msg != "" {
+			return bad(c, msg)
 		}
-		ln := line{code: code, qty: qty}
-		if strings.HasPrefix(code, "PB-") {
-			// pre-built PC from NEWCOM_WEB
-			rows := []map[string]interface{}{}
-			WDB.Raw("SELECT PrebuiltId, Name, Price FROM dbo.WebPrebuiltPc WHERE IsActive = 1 AND Slug = ?", strings.TrimPrefix(code, "PB-")).Scan(&rows)
-			if len(rows) == 1 {
-				pricePrebuilt(rows[0])
-				ln.name = fmt.Sprint(rows[0]["Name"])
-				ln.price, _ = strconv.ParseFloat(fmt.Sprint(rows[0]["Price"]), 64)
-			}
-		} else if DB != nil {
-			if items, err := fetchWebsiteItems(code, "", "", 1, 1); err == nil && len(items) == 1 && items[0].CItemCode == code {
-				it := items[0]
-				if it.StockStatus == "Out of Stock" {
-					return bad(c, it.VcItemDescrition+" is out of stock")
-				}
-				ln.name = it.VcItemDescrition
-				ln.price = it.SellingPrice
-				if it.SpecialPrice > 0 && it.SpecialPrice < it.SellingPrice {
-					ln.price = it.SpecialPrice
-				}
-			}
-		}
-		if ln.name == "" {
-			// not a live inventory item (e.g. a sample PC-builder part): keep it, flagged for the team to price
-			ln.name = clip(l.Name, 230)
-			if ln.name == "" {
-				return bad(c, "Unknown item in cart")
-			}
-			ln.name += " (price to be confirmed)"
-			ln.price = l.Price
-			ln.unverified = true
-			unverified = true
-		}
-		sub += ln.price * float64(qty)
-		lines = append(lines, ln)
+		discount, promoCode = d, &code
 	}
 
 	var fee float64
@@ -143,10 +164,10 @@ func CreateOrder(c *fiber.Ctx) error {
 		var orderID int
 		for attempt := 0; attempt < 5; attempt++ {
 			orderNo = "NW" + time.Now().Format("060102") + randDigits(4)
-			err := tx.Raw(`INSERT INTO dbo.WebOrder (OrderNo, CustomerId, Name, Email, Mobile, Address, City, District, Province, DeliveryMethod, PaymentMethod, SubTotal, DeliveryFee, Total, Notes)
-				OUTPUT INSERTED.OrderId VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			err := tx.Raw(`INSERT INTO dbo.WebOrder (OrderNo, CustomerId, Name, Email, Mobile, Address, City, District, Province, DeliveryMethod, PaymentMethod, SubTotal, Discount, DeliveryFee, Total, Notes, PromoCode)
+				OUTPUT INSERTED.OrderId VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				orderNo, custID, clip(in.Name, 120), email, clip(in.Mobile, 20), clip(in.Address, 300), clip(in.City, 80), clip(in.District, 80), clip(in.Province, 40),
-				in.DeliveryMethod, in.PaymentMethod, sub, fee, sub+fee, notes).Scan(&orderID).Error
+				in.DeliveryMethod, in.PaymentMethod, sub, discount, fee, sub-discount+fee, notes, promoCode).Scan(&orderID).Error
 			if err == nil {
 				break
 			}
@@ -168,5 +189,5 @@ func CreateOrder(c *fiber.Ctx) error {
 	if err != nil {
 		return serverErr(c, err)
 	}
-	return ok(c, fiber.Map{"orderNo": orderNo, "total": sub + fee, "deliveryFee": fee, "needsConfirmation": unverified})
+	return ok(c, fiber.Map{"orderNo": orderNo, "total": sub - discount + fee, "discount": discount, "deliveryFee": fee, "needsConfirmation": unverified})
 }

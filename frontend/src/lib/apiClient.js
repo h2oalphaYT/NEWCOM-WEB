@@ -2,7 +2,9 @@
 
 // Browser-side calls to the Go API (admin panel, account, checkout, support forms).
 // Sessions are HttpOnly cookies set by the API, so every call sends credentials.
-export const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8090";
+// without NEXT_PUBLIC_API_URL, use the same host the page was opened on (localhost, 127.0.0.1 or a LAN IP)
+// so the sign-in cookie stays same-site
+export const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? `http://${window.location.hostname}:8090` : "http://localhost:8090");
 
 export async function api(method, path, body) {
   let res;

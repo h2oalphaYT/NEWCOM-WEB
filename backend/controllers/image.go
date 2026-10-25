@@ -17,15 +17,17 @@ import (
 )
 
 // Item images live in the inventory's S3 bucket under "Files/<path>" (same layout the
-// NEWCOM-Web-Service download endpoint uses). This endpoint only signs GETs for image files
-// under Files/items/ and redirects to the short-lived URL; it never lists or writes.
+// NEWCOM-Web-Service download endpoint uses); website media uploaded from /admin goes under
+// "Files/website/". This endpoint only signs GETs under those two folders and redirects to the
+// short-lived URL; it never lists or writes.
 
 var (
 	presignOnce sync.Once
 	presigner   *s3.PresignClient
+	s3client    *s3.Client
 )
 
-func getPresigner() *s3.PresignClient {
+func initS3() {
 	presignOnce.Do(func() {
 		cfg, err := config.LoadDefaultConfig(context.Background())
 		if err != nil {
@@ -35,16 +37,27 @@ func getPresigner() *s3.PresignClient {
 		if r := os.Getenv("AWS_REGION"); r != "" {
 			cfg.Region = r
 		}
-		presigner = s3.NewPresignClient(s3.NewFromConfig(cfg))
+		s3client = s3.NewFromConfig(cfg)
+		presigner = s3.NewPresignClient(s3client)
 	})
+}
+
+func getPresigner() *s3.PresignClient {
+	initS3()
 	return presigner
+}
+
+// s3Ready reports whether the bucket and access keys are configured in .env.
+func s3Ready() bool {
+	initS3()
+	return s3client != nil && os.Getenv("AWS_BUCKET") != "" && os.Getenv("AWS_ACCESS_KEY_ID") != ""
 }
 
 // ItemImage handles GET /api/image?path=items/ITM001/ITM001_item_image.jpg
 func ItemImage(c *fiber.Ctx) error {
 	p := path.Clean("/" + strings.ReplaceAll(c.Query("path"), "\\", "/"))[1:]
-	// only item pictures (stored under items/), some of which have odd or missing extensions
-	if p == "" || strings.Contains(p, "..") || !strings.HasPrefix(p, "items/") {
+	// only item pictures (items/, some with odd or missing extensions) and admin uploads (website/)
+	if p == "" || strings.Contains(p, "..") || !(strings.HasPrefix(p, "items/") || strings.HasPrefix(p, "website/")) {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	ps := getPresigner()
@@ -60,6 +73,7 @@ func ItemImage(c *fiber.Ctx) error {
 		log.Printf("presign %s: %v", p, err)
 		return c.SendStatus(fiber.StatusNotFound)
 	}
+	// the signed URL lasts 15 minutes, so browsers may reuse the redirect for 10
 	c.Set("Cache-Control", "public, max-age=600")
 	return c.Redirect(req.URL, http.StatusTemporaryRedirect)
 }

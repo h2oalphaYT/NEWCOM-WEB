@@ -6,7 +6,8 @@ import (
 
 // applyWebOverrides layers website data from NEWCOM_WEB on top of inventory items:
 // hidden items are removed, titles/brands/images can be overridden, and active promotions set
-// the special price and a badge. Inventory data itself is never changed.
+// the special price and a badge (promo-code promotions only apply at checkout). Inventory data
+// itself is never changed.
 func applyWebOverrides(items []WebsiteItem) []WebsiteItem {
 	if WDB == nil || len(items) == 0 {
 		return items
@@ -67,7 +68,7 @@ func applyWebOverrides(items []WebsiteItem) []WebsiteItem {
 	}
 	WDB.Raw(`SELECT pi.ItemCode, p.DiscountType, p.DiscountValue, pi.SpecialPrice, p.BadgeText
 		FROM dbo.WebPromotionItem pi JOIN dbo.WebPromotion p ON p.PromotionId = pi.PromotionId
-		WHERE pi.ItemCode IN ? AND p.IsActive = 1 AND (p.StartDate IS NULL OR p.StartDate <= SYSUTCDATETIME()) AND (p.EndDate IS NULL OR p.EndDate >= SYSUTCDATETIME())
+		WHERE pi.ItemCode IN ? AND p.IsActive = 1 AND ISNULL(p.PromoCode, '') = '' AND (p.StartDate IS NULL OR p.StartDate <= SYSUTCDATETIME()) AND (p.EndDate IS NULL OR p.EndDate >= SYSUTCDATETIME())
 		ORDER BY p.SortOrder, p.PromotionId DESC`, codes).Scan(&promos)
 	done := map[string]bool{}
 	for _, pr := range promos {

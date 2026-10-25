@@ -14,7 +14,7 @@ export function fmtCell(v, key) {
     const d = new Date(v);
     return isNaN(d) ? v : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   }
-  if (/(Total|Price|Fee|Value)$/.test(key) && typeof v === "number") return key === "DiscountValue" ? v : lkr(v);
+  if (/(Total|Price|Fee|Value|Discount|MinOrder)$/.test(key) && typeof v === "number") return key === "DiscountValue" ? v : lkr(v);
   if (key === "Status") return <span className={`adm-pill st-${v}`}>{v}</span>;
   if (/Url$/.test(key)) return <span className="adm-mute" title={v}>{String(v).split("/").pop()}</span>;
   return String(v);
@@ -123,7 +123,7 @@ export function Field({ f, value, onChange, isNew }) {
   } else if (f.type === "number" || f.type === "money") {
     input = <input className="adm-in" type="number" step={f.type === "money" ? "any" : "1"} value={value ?? ""} onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))} />;
   } else {
-    input = <input className="adm-in" value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={f.placeholder} />;
+    input = <input className="adm-in" value={value ?? ""} onChange={(e) => onChange(f.upper ? e.target.value.toUpperCase().replace(/\s/g, "") : e.target.value)} placeholder={f.placeholder} />;
   }
   return (
     <label className={`adm-f${f.type === "textarea" || f.type === "media" ? " wide" : ""}`}>

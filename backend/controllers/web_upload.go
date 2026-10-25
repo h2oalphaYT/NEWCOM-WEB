@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"os"
@@ -8,11 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gofiber/fiber/v2"
 )
 
-// Admin media uploads (banner images/videos, pre-built PC photos, item photos). Files are saved
-// under ./uploads/web/<yyyymm>/ with a random name and served read-only from /uploads.
+// Admin media uploads (banner images/videos, pre-built PC photos, item photos). With AWS keys in
+// .env they go to the S3 bucket under Files/website/<yyyymm>/ and are served through /api/image;
+// otherwise they are saved under ./uploads/web/<yyyymm>/ and served read-only from /uploads.
 
 var uploadTypes = map[string]string{
 	"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif",
@@ -45,13 +49,31 @@ func AdminUpload(c *fiber.Ctx) error {
 	if !allowed {
 		return bad(c, "Only JPG, PNG, WebP, GIF, MP4 or WebM files")
 	}
-	dir := filepath.Join("uploads", "web", time.Now().Format("200601"))
+	name := time.Now().Format("150405") + "-" + randDigits(10) + ext
+	month := time.Now().Format("200601")
+	if s3Ready() {
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			return serverErr(c, err)
+		}
+		key := "website/" + month + "/" + name
+		_, err := s3client.PutObject(context.Background(), &s3.PutObjectInput{
+			Bucket:       aws.String(os.Getenv("AWS_BUCKET")),
+			Key:          aws.String("Files/" + key),
+			Body:         f,
+			ContentType:  aws.String(strings.Split(kind, ";")[0]),
+			CacheControl: aws.String("public, max-age=31536000"),
+		})
+		if err != nil {
+			return serverErr(c, err)
+		}
+		return ok(c, fiber.Map{"url": "/api/image?path=" + key, "type": strings.Split(kind, "/")[0], "storage": "s3"})
+	}
+	dir := filepath.Join("uploads", "web", month)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return serverErr(c, err)
 	}
-	name := time.Now().Format("150405") + "-" + randDigits(10) + ext
 	if err := c.SaveFile(fh, filepath.Join(dir, name)); err != nil {
 		return serverErr(c, err)
 	}
-	return ok(c, fiber.Map{"url": "/" + filepath.ToSlash(filepath.Join(dir, name)), "type": strings.Split(kind, "/")[0]})
+	return ok(c, fiber.Map{"url": "/" + filepath.ToSlash(filepath.Join(dir, name)), "type": strings.Split(kind, "/")[0], "storage": "local"})
 }

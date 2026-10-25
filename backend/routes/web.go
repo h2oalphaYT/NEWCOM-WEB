@@ -26,6 +26,7 @@ func WebRoute(app *fiber.App) {
 	api.Get("/prebuilt/:slug", controllers.PublicPrebuiltOne)
 
 	api.Post("/orders", strict(10), controllers.CreateOrder)
+	api.Post("/promo", strict(20), controllers.CheckPromo)
 	api.Post("/claims", strict(10), controllers.CreateClaim)
 	api.Get("/claims/:ticket", strict(30), controllers.TrackClaim)
 	api.Post("/bookings", strict(10), controllers.CreateBooking)

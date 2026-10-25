@@ -26,7 +26,7 @@ func PublicBanners(c *fiber.Ctx) error {
 // PublicPromotions: GET /api/web/promotions (active promotions with their item codes)
 func PublicPromotions(c *fiber.Ctx) error {
 	rows := []map[string]interface{}{}
-	if err := WDB.Raw("SELECT PromotionId, Name, Slug, Description, BadgeText, DiscountType, DiscountValue, ImageUrl, EndDate FROM dbo.WebPromotion WHERE " + activeWindow + " ORDER BY SortOrder, PromotionId DESC").Scan(&rows).Error; err != nil {
+	if err := WDB.Raw("SELECT PromotionId, Name, Slug, Description, BadgeText, DiscountType, DiscountValue, ImageUrl, EndDate, PromoCode, MinOrder, ShowInBar FROM dbo.WebPromotion WHERE " + activeWindow + " ORDER BY SortOrder, PromotionId DESC").Scan(&rows).Error; err != nil {
 		return serverErr(c, err)
 	}
 	for _, r := range rows {

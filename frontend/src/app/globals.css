@@ -54,7 +54,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -.03em; }
 .hdr { position: sticky; top: 0; z-index: 50; background: var(--bg); }
 .hdr.has-ann { top: -40px; }
 .ann { height: 40px; background: #181818; color: #E6E6E9; font-size: 13px; display: flex; align-items: center; justify-content: center; padding: 0 48px; position: relative; }
-.ann button { position: absolute; right: 12px; top: 0; width: 44px; height: 40px; background: none; border: 0; cursor: pointer; color: #E6E6E9; }
+.ann .ann-x { position: absolute; right: 12px; top: 0; width: 44px; height: 40px; background: none; border: 0; cursor: pointer; color: #E6E6E9; }
 .hdr-bar { border-bottom: 1px solid var(--line); background: var(--bg); }
 .hdr-top { max-width: 1280px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; }
 .logo img { display: block; height: 44px; width: auto; }
@@ -543,7 +543,7 @@ html.no-scroll, html.no-scroll body { overflow: hidden; }
   .hdr.has-ann { top: -32px; }
   .ann { height: 32px; font-size: 12px; padding: 0 40px 0 12px; justify-content: flex-start; white-space: nowrap; overflow: hidden; }
   .ann span { overflow: hidden; text-overflow: ellipsis; }
-  .ann button { height: 32px; right: 0; }
+  .ann .ann-x { height: 32px; right: 0; }
   .hdr-top { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 6px; padding: 8px 12px; }
   .hdr-top .logo img { height: 34px; }
   .hdr-actions { gap: 2px; margin-left: 0; }
@@ -1319,27 +1319,17 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
   .promo-strip { min-height: 170px; }
 }
 
-/* ===== customer account ===== */
-.acc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
-.acc-auth { max-width: 460px; margin-top: 24px; padding: 24px; }
-.acc-form { display: grid; gap: 14px; margin-top: 20px; }
-.acc-form .fl, .acc-card .fl { display: flex; flex-direction: column; gap: 6px; }
-.acc-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; margin-top: 24px; align-items: start; }
-.acc-card { padding: 24px; }
-.acc-card h2 { font-size: 20px; font-weight: 800; }
-.acc-check span { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 500; }
-.acc-check input { width: 18px; height: 18px; accent-color: var(--brand); }
-.acc-orders { display: grid; gap: 10px; margin-top: 16px; }
-.acc-order { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.acc-order > button { width: 100%; display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: "no st tot" "dt st tot"; gap: 2px 14px; align-items: center; padding: 12px 16px; background: none; border: 0; text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
-.acc-order > button strong { grid-area: no; }
-.acc-order > button > span:nth-of-type(1) { grid-area: dt; font-size: 13px; color: var(--mute); }
-.acc-st { grid-area: st; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--surface2); }
-.acc-st.st-completed, .acc-st.st-paid { background: var(--okbg); color: var(--okfg); }
-.acc-st.st-cancelled { background: var(--badbg); color: var(--err); }
-.acc-st.st-new { background: var(--tint); color: var(--accfg); }
-.acc-tot { grid-area: tot; font-weight: 800; }
-.acc-order ul { list-style: none; margin: 0; padding: 4px 16px 12px; border-top: 1px solid var(--line); }
-.acc-order li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 14px; border-bottom: 1px dashed var(--line); }
-.acc-order li:last-child { border-bottom: 0; }
-@media (max-width: 860px) { .acc-grid { grid-template-columns: 1fr; } }
+/* ===== customer account: see account.css ===== */
+
+/* promo codes in the announcement bar */
+.ann-item { animation: annIn .45s ease both; }
+.ann-item em { font-style: normal; color: #A1A1AA; }
+.ann-code { display: inline-flex; align-items: center; height: 24px; margin: 0 2px; padding: 0 10px; border: 1px dashed #FF6B70; border-radius: 6px; background: rgba(227,30,36,.18); color: #fff; font: inherit; font-weight: 800; letter-spacing: .06em; cursor: pointer; }
+.ann-code:hover { background: rgba(227,30,36,.32); }
+@keyframes annIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) { .ann-code { height: 22px; padding: 0 7px; } .ann-item em { display: none; } }
+.promo-box { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.promo-box .in { flex: 1 1 140px; width: auto; text-transform: uppercase; }
+.promo-box .err { flex-basis: 100%; }
+.promo-ok { flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--okbg); color: var(--okfg); font-size: 14px; }
+.promo-ok button { background: none; border: 0; color: var(--link); font: inherit; font-weight: 600; cursor: pointer; min-height: 32px; }

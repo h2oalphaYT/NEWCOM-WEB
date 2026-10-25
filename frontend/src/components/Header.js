@@ -18,6 +18,9 @@ export default function Header() {
   const { count } = useCart();
   const [ann, setAnn] = useState(true);
   const [annText, setAnnText] = useState("Island-wide delivery · Manufacturer warranty on all products");
+  const [codes, setCodes] = useState([]); // promo codes flagged "show in top bar" in /admin
+  const [annIdx, setAnnIdx] = useState(0);
+  const [copied, setCopied] = useState("");
   const [open, setOpen] = useState(-1);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(-1);
@@ -32,7 +35,23 @@ export default function Header() {
   // close the mobile menu on navigation, lock page scroll while it is open
   useEffect(() => { setDrawer(false); setOpen(-1); }, [path]);
   // announcement text is edited in /admin → Settings (key "announcement"; empty hides the bar)
-  useEffect(() => { api("GET", "/api/web/settings").then((r) => { if (r.ok && r.payload && "announcement" in r.payload) setAnnText(r.payload.announcement.trim()); }); }, []);
+  useEffect(() => {
+    api("GET", "/api/web/settings").then((r) => { if (r.ok && r.payload && "announcement" in r.payload) setAnnText(r.payload.announcement.trim()); });
+    api("GET", "/api/web/promotions").then((r) => { if (r.ok) setCodes((r.payload || []).filter((p) => p.ShowInBar && p.PromoCode)); });
+  }, []);
+  // rotate between the announcement and the promo codes
+  const annItems = [...codes.map((p) => ({ code: p.PromoCode, text: p.BadgeText || p.Name, min: p.MinOrder })), ...(annText ? [{ text: annText }] : [])];
+  useEffect(() => {
+    if (annItems.length < 2) return;
+    const t = setInterval(() => setAnnIdx((i) => (i + 1) % annItems.length), 6000);
+    return () => clearInterval(t);
+  }, [annItems.length]);
+  const annCur = annItems[annIdx % Math.max(annItems.length, 1)];
+  function copyCode(code) {
+    try { navigator.clipboard.writeText(code); } catch {}
+    setCopied(code);
+    setTimeout(() => setCopied(""), 2000);
+  }
   useEffect(() => {
     document.documentElement.classList.toggle("no-scroll", drawer);
     if (!drawer) return;
@@ -108,11 +127,19 @@ export default function Header() {
   const isDark = theme === "dark";
 
   return (
-    <header ref={hdrRef} className={`hdr${ann && annText ? " has-ann" : ""}`} onMouseLeave={() => setOpen(-1)}>
-      {ann && annText && (
-        <div className="ann">
-          <span>{annText}</span>
-          <button onClick={() => setAnn(false)} aria-label="Dismiss announcement">
+    <header ref={hdrRef} className={`hdr${ann && annCur ? " has-ann" : ""}`} onMouseLeave={() => setOpen(-1)}>
+      {ann && annCur && (
+        <div className="ann" aria-live="polite">
+          {annCur.code ? (
+            <span key={annCur.code} className="ann-item">
+              {annCur.text} with code{" "}
+              <button type="button" className="ann-code" onClick={() => copyCode(annCur.code)} title="Copy code">{copied === annCur.code ? "Copied" : annCur.code}</button>
+              {annCur.min ? <em> on orders over {lkr(annCur.min)}</em> : null}
+            </span>
+          ) : (
+            <span key="ann" className="ann-item">{annCur.text}</span>
+          )}
+          <button className="ann-x" onClick={() => setAnn(false)} aria-label="Dismiss announcement">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         </div>

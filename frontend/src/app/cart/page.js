@@ -48,6 +48,9 @@ export default function CartPage() {
   const [busy, setBusy] = useState(false);
   const [order, setOrder] = useState(null);
   const [fee, setFee] = useState(0);
+  const [codeIn, setCodeIn] = useState("");
+  const [promo, setPromo] = useState(null); // { code, discount } checked by the server
+  const [promoErr, setPromoErr] = useState("");
 
   // signed-in customers get their saved details; the delivery fee comes from the admin settings
   useEffect(() => {
@@ -59,14 +62,26 @@ export default function CartPage() {
     api("GET", "/api/web/settings").then((r) => r.ok && setFee(Number(r.payload?.delivery_fee) || 0));
   }, []);
 
+  const orderLines = () => lines.map((l) => ({ itemCode: l.id, name: l.p.name, qty: l.qty, price: l.p.price }));
+
+  async function applyCode(e) {
+    e.preventDefault();
+    const code = codeIn.trim().toUpperCase();
+    if (!code) return;
+    setPromoErr("");
+    const r = await api("POST", "/api/web/promo", { code, lines: orderLines() });
+    if (r.ok) { setPromo(r.payload); setCodeIn(""); }
+    else { setPromo(null); setPromoErr(r.message || "That code can't be used."); }
+  }
+
   async function placeOrder() {
     if (!pay) return setPayErr("Choose a payment method to continue.");
     setBusy(true); setPayErr("");
     const r = await api("POST", "/api/web/orders", {
       name: f.name.trim(), email: f.email.trim(), mobile: f.phone.replace(/[\s-]/g, ""),
       address: f.address, city: f.city, district: f.district, province: f.province,
-      deliveryMethod: dm, paymentMethod: pay, notes,
-      lines: lines.map((l) => ({ itemCode: l.id, name: l.p.name, qty: l.qty, price: l.p.price })),
+      deliveryMethod: dm, paymentMethod: pay, notes, promoCode: promo?.code || "",
+      lines: orderLines(),
     });
     setBusy(false);
     if (!r.ok) return setPayErr(r.message || "We couldn't place the order. Please try again or call us.");
@@ -76,10 +91,14 @@ export default function CartPage() {
   }
 
   const lines = cart.lines.map((l) => ({ ...l, p: resolve(l) })).filter((l) => l.p);
+  // a changed cart needs the promo code checked again
+  const cartKey = lines.map((l) => `${l.id}x${l.qty}`).join(",");
+  useEffect(() => { setPromo(null); }, [cartKey]);
   const count = lines.reduce((a, l) => a + l.qty, 0);
   const sub = lines.reduce((a, l) => a + l.qty * l.p.price, 0);
   const errs = errorsFor(f, dm === "pickup");
   const deliveryFee = dm === "pickup" ? 0 : fee;
+  const discount = promo?.discount || 0;
   const stepIdx = { cart: 0, details: 1, pay: 2, done: 3 }[step];
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
@@ -193,7 +212,7 @@ export default function CartPage() {
             <div className="step done">
               <div className="done-tick"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg></div>
               <h2 style={{ marginTop: 20, fontSize: 26, fontWeight: 800 }}>Order {order?.orderNo} received</h2>
-              <p>Thank you, {f.name.split(" ")[0] || "customer"}. Your order total is <strong>{lkr(order?.total)}</strong>. Our team will call or WhatsApp you on {f.phone} to confirm stock and arrange payment{dm === "pickup" ? " and collection" : " and delivery"}.</p>
+              <p>Thank you, {f.name.split(" ")[0] || "customer"}. Your order total is <strong>{lkr(order?.total)}</strong>{order?.discount ? ` after your ${lkr(order.discount)} discount` : ""}. Our team will call or WhatsApp you on {f.phone} to confirm stock and arrange payment{dm === "pickup" ? " and collection" : " and delivery"}.</p>
               {order?.needsConfirmation && <p style={{ color: "#B45309" }}>Some items need their price confirmed by our team before payment.</p>}
               <p className="sub" style={{ fontSize: 14 }}>Keep your order number. It also appears under <Link href="/account" style={{ color: "var(--link)", fontWeight: 600 }}>My account</Link> when you register with {f.email}.</p>
               <Link className="btn btn-dark" href="/" style={{ marginTop: 20 }}>Back to home</Link>
@@ -205,10 +224,27 @@ export default function CartPage() {
           <h2 style={{ fontSize: 18, fontWeight: 700 }}>Order summary</h2>
           <div className="sumrows">
             <div><span>Subtotal ({count} items)</span><span key={sub} className="tot-sm">{lkr(sub)}</span></div>
-            <div><span>Discount</span><span>LKR 0</span></div>
+            <div><span>Discount{promo ? ` (${promo.code})` : ""}</span><span style={{ color: discount ? "var(--okfg)" : undefined }}>{discount ? `− ${lkr(discount)}` : "LKR 0"}</span></div>
             <div><span>Delivery</span><span>{step === "cart" ? "Next step" : deliveryFee ? lkr(deliveryFee) : dm === "pickup" ? "Collect in store" : "Confirmed with order"}</span></div>
-            <div className="sumtotal"><span>Total</span><span key={`t${sub}`} className="tot">{lkr(sub + (step === "cart" ? 0 : deliveryFee))}</span></div>
+            <div className="sumtotal"><span>Total</span><span key={`t${sub}`} className="tot">{lkr(sub - discount + (step === "cart" ? 0 : deliveryFee))}</span></div>
           </div>
+          {lines.length > 0 && (
+            <form className="promo-box" onSubmit={applyCode}>
+              {promo ? (
+                <div className="promo-ok">
+                  <span>Code <strong>{promo.code}</strong> applied</span>
+                  <button type="button" onClick={() => setPromo(null)}>Remove</button>
+                </div>
+              ) : (
+                <>
+                  <label className="sr-only" htmlFor="promo">Promo code</label>
+                  <input id="promo" className="in" placeholder="Promo code" value={codeIn} onChange={(e) => { setCodeIn(e.target.value.toUpperCase()); setPromoErr(""); }} autoCapitalize="characters" />
+                  <button className="btn" disabled={!codeIn.trim()}>Apply</button>
+                </>
+              )}
+              {promoErr && <span className="err" role="alert">{promoErr}</span>}
+            </form>
+          )}
           {step === "cart" && (
             <button className="btn btn-primary" style={{ marginTop: 20, width: "100%", height: 52, background: lines.length ? undefined : "#94A3B8", cursor: lines.length ? "pointer" : "not-allowed" }} disabled={!lines.length} onClick={() => setStep("details")}>Proceed to checkout</button>
           )}
