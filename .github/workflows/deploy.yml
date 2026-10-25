@@ -1,0 +1,185 @@
+# Build and test on every push and pull request; deploy to the EC2 server on every push to main.
+#
+# Server layout (see docs/DEPLOYMENT.md):
+#   /home/ubuntu/webnewcom/backend   Go API binary "backend" on 127.0.0.1:9040 (+ .env, kept)
+#   /home/ubuntu/webnewcom/frontend  Next.js "npm run start" on 127.0.0.1:9042 (+ .env.production, kept)
+#   Caddy proxies api.newcom.auralflix.com -> 9040 and newcom.auralflix.com -> 9042.
+#
+# Repository secrets:  SSH_HOST, SSH_USER, SSH_PRIVATE_KEY  (optional: SSH_PORT, SSH_KNOWN_HOSTS)
+# Repository variables (optional): BACKEND_SERVICE, FRONTEND_SERVICE, DEPLOY_DIR, NEXT_PUBLIC_API_URL
+
+name: Build and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'deploy-production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://api.newcom.auralflix.com' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Backend - vet, test, build
+        working-directory: backend
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          go vet ./...
+          go test ./...
+          mkdir -p dist
+          go build -trimpath -ldflags="-s -w" -o dist/backend .
+          go build -trimpath -ldflags="-s -w" -o dist/migrate ./cmd/migrate
+          go build -trimpath -ldflags="-s -w" -o dist/createadmin ./cmd/createadmin
+          go build -trimpath -ldflags="-s -w" -o dist/seedweb ./cmd/seedweb
+          cp -r migrations dist/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend - install and build
+        working-directory: frontend
+        env:
+          # baked into the browser bundle
+          NEXT_PUBLIC_API_URL: ${{ env.API_URL }}
+          # used while pre-rendering pages here; on the server .env.production points at 127.0.0.1:9040
+          NEWCOM_API_URL: ${{ env.API_URL }}
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package release
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p release/frontend
+          cp -r backend/dist release/backend
+          cp -r frontend/.next frontend/public frontend/package.json frontend/package-lock.json frontend/next.config.mjs release/frontend/
+          rm -rf release/frontend/.next/cache
+          tar -czf release.tgz -C release .
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: release
+          path: release.tgz
+          retention-days: 7
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/home/ubuntu/webnewcom' }}
+      BACKEND_SERVICE: ${{ vars.BACKEND_SERVICE || 'newcom-backend' }}
+      FRONTEND_SERVICE: ${{ vars.FRONTEND_SERVICE || 'newcom-frontend' }}
+      SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: Set up SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$SSH_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" > ~/.ssh/known_hosts
+          fi
+
+      - name: Upload release
+        env:
+          TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+        run: |
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" release.tgz "$TARGET:/tmp/newcom-release.tgz"
+
+      - name: Install, migrate and restart
+        env:
+          TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$TARGET" \
+            "DEPLOY_DIR='$DEPLOY_DIR' BACKEND_SERVICE='$BACKEND_SERVICE' FRONTEND_SERVICE='$FRONTEND_SERVICE' bash -s" <<'REMOTE'
+          set -euo pipefail
+          STAGE=$(mktemp -d)
+          tar -xzf /tmp/newcom-release.tgz -C "$STAGE"
+          mkdir -p "$DEPLOY_DIR/backend" "$DEPLOY_DIR/frontend"
+
+          # backend: replace binaries and migrations; .env and uploads/ stay as they are
+          cp "$STAGE"/backend/backend "$DEPLOY_DIR/backend/backend.new"
+          cp "$STAGE"/backend/migrate "$STAGE"/backend/createadmin "$STAGE"/backend/seedweb "$DEPLOY_DIR/backend/"
+          rm -rf "$DEPLOY_DIR/backend/migrations" && cp -r "$STAGE"/backend/migrations "$DEPLOY_DIR/backend/"
+          chmod +x "$DEPLOY_DIR"/backend/backend.new "$DEPLOY_DIR"/backend/migrate "$DEPLOY_DIR"/backend/createadmin "$DEPLOY_DIR"/backend/seedweb
+          (cd "$DEPLOY_DIR/backend" && ./migrate)
+          mv -f "$DEPLOY_DIR/backend/backend.new" "$DEPLOY_DIR/backend/backend"
+
+          # frontend: install production dependencies only when the lockfile changed
+          F="$DEPLOY_DIR/frontend"
+          if ! cmp -s "$STAGE/frontend/package-lock.json" "$F/package-lock.json" || [ ! -d "$F/node_modules" ]; then
+            cp "$STAGE"/frontend/package.json "$STAGE"/frontend/package-lock.json "$F/"
+            (cd "$F" && npm ci --omit=dev --no-audit --no-fund)
+          fi
+          cp "$STAGE"/frontend/package.json "$STAGE"/frontend/next.config.mjs "$F/"
+          rm -rf "$F/.next.new" && cp -r "$STAGE/frontend/.next" "$F/.next.new"
+          rm -rf "$F/public.new" && cp -r "$STAGE/frontend/public" "$F/public.new"
+          rm -rf "$F/.next.old" "$F/public.old"
+          [ -d "$F/.next" ] && mv "$F/.next" "$F/.next.old"
+          [ -d "$F/public" ] && mv "$F/public" "$F/public.old"
+          mv "$F/.next.new" "$F/.next" && mv "$F/public.new" "$F/public"
+
+          sudo systemctl restart "$BACKEND_SERVICE"
+          sudo systemctl restart "$FRONTEND_SERVICE"
+          rm -rf "$STAGE" /tmp/newcom-release.tgz "$F/.next.old" "$F/public.old"
+          REMOTE
+
+      - name: Health check
+        env:
+          TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$TARGET" "BACKEND_SERVICE='$BACKEND_SERVICE' FRONTEND_SERVICE='$FRONTEND_SERVICE' bash -s" <<'REMOTE'
+          set -u
+          for i in $(seq 1 20); do
+            api=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9040/api/health || true)
+            web=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9042/ || true)
+            if [ "$api" = "200" ] && [ "$web" = "200" ]; then echo "backend $api, frontend $web"; exit 0; fi
+            sleep 3
+          done
+          echo "health check failed: backend=$api frontend=$web"
+          sudo journalctl -u "$BACKEND_SERVICE" -n 30 --no-pager || true
+          sudo journalctl -u "$FRONTEND_SERVICE" -n 30 --no-pager || true
+          exit 1
+          REMOTE
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

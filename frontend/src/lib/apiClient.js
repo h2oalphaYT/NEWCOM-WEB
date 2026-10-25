@@ -2,9 +2,16 @@
 
 // Browser-side calls to the Go API (admin panel, account, checkout, support forms).
 // Sessions are HttpOnly cookies set by the API, so every call sends credentials.
-// without NEXT_PUBLIC_API_URL, use the same host the page was opened on (localhost, 127.0.0.1 or a LAN IP)
-// so the sign-in cookie stays same-site
-export const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? `http://${window.location.hostname}:8090` : "http://localhost:8090");
+// NEXT_PUBLIC_API_URL is set at build time (https://api.newcom.auralflix.com in production).
+// Without it: in development use port 8090 on the host the page was opened on (localhost,
+// 127.0.0.1 or a LAN IP); on a real domain use the "api." subdomain of the site.
+function guessApi() {
+  if (typeof window === "undefined") return "http://localhost:8090";
+  const { protocol, hostname, port } = window.location;
+  const dev = port === "3000" || hostname === "localhost" || /^(\d+\.){3}\d+$/.test(hostname);
+  return dev ? `http://${hostname}:8090` : `${protocol}//api.${hostname}`;
+}
+export const PUBLIC_API = (process.env.NEXT_PUBLIC_API_URL || guessApi()).replace(/\/$/, "");
 
 export async function api(method, path, body) {
   let res;

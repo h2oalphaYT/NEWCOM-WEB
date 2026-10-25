@@ -3,11 +3,13 @@
 export const API = process.env.NEWCOM_API_URL || "http://localhost:8090";
 // Website content (banners, promotions, pre-built PCs, orders...) lives in this repo's backend. Point
 // NEWCOM_API_URL and NEXT_PUBLIC_API_URL at the same backend so items, content and uploads match.
-export const WEB_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8090";
+export const WEB_API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8090").replace(/\/$/, "");
 
 async function get(path, params = {}, revalidate = 60) {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ""));
-  const url = `${path.startsWith("/api/web/") ? WEB_API : API}${path}${qs.size ? `?${qs}` : ""}`;
+  // in production NEWCOM_API_URL is this repo's backend on the same machine, so use it for everything
+  const base = path.startsWith("/api/web/") && process.env.NODE_ENV !== "production" ? WEB_API : API;
+  const url = `${base}${path}${qs.size ? `?${qs}` : ""}`;
   try {
     const res = await fetch(url, { next: { revalidate }, signal: AbortSignal.timeout(8000) });
     const body = await res.json();
@@ -30,7 +32,8 @@ export const getPrebuilts = () => get("/api/web/prebuilt", {}, 30);
 export const getPrebuilt = (slug) => get(`/api/web/prebuilt/${encodeURIComponent(slug)}`, {}, 30);
 
 // stored media is either a full URL, a site asset (/media, /brand), an admin upload or an inventory image
-export const assetUrl = (u) => (!u ? undefined : /^https?:\/\//.test(u) || /^\/(media|brand)\//.test(u) ? u : `${u.startsWith("/uploads/") ? WEB_API : API}${u}`);
+// (the browser loads these, so they always use the public API address, never the internal one)
+export const assetUrl = (u) => (!u ? undefined : /^https?:\/\//.test(u) || /^\/(media|brand)\//.test(u) ? u : `${WEB_API}${u}`);
 
 // --- map an inventory row to the product shape the UI uses ---
 
