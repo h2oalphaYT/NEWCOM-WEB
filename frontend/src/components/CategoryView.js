@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ProductCard from "@/components/ProductCard";
 import { facetsFor, products } from "@/lib/catalog";
 import { lkr, site } from "@/lib/site";
@@ -10,15 +11,17 @@ const MAX = 600000;
 const PER_PAGE = 6;
 
 // Category and filters page from the redesign mockup, generalised to the whole sample catalogue.
-export default function CategoryView({ category = "", q = "", condition = "" }) {
+export default function CategoryView({ category = "", q = "", condition = "", items, live = false, livePage = 1, hasMore = false, cat = "", cats = [] }) {
   const base = useMemo(() => {
     const n = q.trim().toLowerCase();
-    return products.filter((p) =>
-      (!category || p.category === category) &&
+    return (items || products).filter((p) =>
+      (live || !category || p.category === category) &&
       (!condition || p.condition === condition) &&
-      (!n || `${p.name} ${p.brand} ${p.id} ${p.category}`.toLowerCase().includes(n)));
-  }, [category, q, condition]);
+      (live || !n || `${p.name} ${p.brand} ${p.id} ${p.category}`.toLowerCase().includes(n)));
+  }, [category, q, condition, items, live]);
 
+  const router = useRouter();
+  const pageHref = (n) => `/products?${new URLSearchParams({ ...(q && { q }), ...(cat && { cat }), page: String(n) })}`;
   const facets = useMemo(() => facetsFor(category), [category]);
   const [picked, setPicked] = useState({}); // facet title -> [values]
   const [stock, setStock] = useState(false);
@@ -89,12 +92,21 @@ export default function CategoryView({ category = "", q = "", condition = "" }) 
         <div className="cat-head">
           <div>
             <h1 className="page-title" style={{ marginTop: 0 }}>{title}</h1>
-            <p className="lead">{condition === "used" ? "Tested second-hand laptops, components and workstations, each with a Newcom warranty." : isGpu ? "NVIDIA and AMD graphics cards. Filter by chipset, memory and price." : category === "Laptops" ? "Filter by brand, processor, RAM, graphics and screen size." : "Filter by brand, type, availability and price."} Sample data for demonstration.</p>
+            <p className="lead">{condition === "used" ? "Tested second-hand laptops, components and workstations, each with a Newcom warranty." : isGpu ? "NVIDIA and AMD graphics cards. Filter by chipset, memory and price." : category === "Laptops" ? "Filter by brand, processor, RAM, graphics and screen size." : "Filter by brand, type, availability and price."} {live ? "Live stock from our inventory." : "Sample data for demonstration."}</p>
           </div>
           <div className="cat-tools">
             <button className="fb btn" onClick={() => setDrawer(true)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 5h18M6 12h12M10 19h4" /></svg>Filters
             </button>
+            {live && cats.length > 0 && (
+              <>
+                <label htmlFor="lcat" className="sr-only">Category</label>
+                <select id="lcat" className="sel" value={cat} onChange={(e) => router.push(e.target.value ? `/products?cat=${encodeURIComponent(e.target.value)}` : "/products")}>
+                  <option value="">All categories</option>
+                  {cats.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
+              </>
+            )}
             <span style={{ fontSize: 14, color: "var(--mute)" }} aria-live="polite">{list.length} {list.length === 1 ? "product" : "products"}</span>
             <label htmlFor="sort" className="sr-only">Sort by</label>
             <select id="sort" className="sel" value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -148,6 +160,13 @@ export default function CategoryView({ category = "", q = "", condition = "" }) 
               <div className="pgrid sm fade">{shown.map((p) => <ProductCard key={p.id} p={p} />)}</div>
               {shown.length < list.length && (
                 <div style={{ marginTop: 32, textAlign: "center" }}><button className="btn" onClick={() => setPage(page + 1)}>Load more ({list.length - shown.length} left)</button></div>
+              )}
+              {live && shown.length >= list.length && (livePage > 1 || hasMore) && (
+                <div className="lpager">
+                  {livePage > 1 && <Link className="btn" href={pageHref(livePage - 1)}>← Previous</Link>}
+                  <span>Page {livePage}</span>
+                  {hasMore && <Link className="btn btn-primary" href={pageHref(livePage + 1)}>Next page →</Link>}
+                </div>
               )}
             </>
           )}

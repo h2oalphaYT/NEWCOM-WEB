@@ -18,8 +18,9 @@ go run .
 | Route | Purpose |
 |---|---|
 | `GET /api/health` | DB reachability |
-| `GET /api/items?q=&category=&page_no=&row_count=` | Catalogue (`fxMastItemsGetAll`) |
-| `GET /api/items/:id` | One item (`fxMastItemsGetById`) |
+| `GET /api/items?q=&category=&page_no=&row_count=` | Catalogue (`fxMastItemsGetAllForWebsite`) |
+| `GET /api/items/:id` | One item (same function, by item code) |
+| `GET /api/image?path=items/...` | Redirects to a short-lived S3 link for an item image (needs the AWS_* keys) |
 | `GET /api/categories` | Categories (`fxMastCategoryLists`) |
 | `GET /api/categories/:code/subcategories` | Sub categories |
 | `GET /api/brands` | Brands (`fxMastBrandGetAll`) |

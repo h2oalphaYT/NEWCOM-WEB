@@ -58,6 +58,7 @@ func main() {
 	routes.ItemRoute(app)
 	routes.CategoryRoute(app)
 	routes.BrandRoute(app)
+	routes.ImageRoute(app)
 
 	log.Printf("Application listening on port %s", port)
 	if err := app.Listen(":" + port); err != nil {

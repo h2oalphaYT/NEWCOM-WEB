@@ -106,6 +106,15 @@ const builderKind = { cpu: "cpu", gpu: "gpu", ram: "ram", ssd: "ssd", hdd: "ssd"
 const fromBuilder = (b) => b && { id: b.id, name: b.name, brand: b.name.split(" ")[0], category: "PC build parts", kind: builderKind[b.slot] || "case", price: b.price, stock: "in", max: 5, specs: [{ k: "Source", v: "PC builder sample" }] };
 
 export const findProduct = (id) => products.find((x) => x.id === id) || fromBuilder(partById(id));
+
+// small copy of a product kept in the cart / compare list, so live inventory items survive a reload
+export const snapOf = (p) => p && {
+  id: p.id, name: p.name, brand: p.brand, category: p.category, kind: p.kind, price: p.price, was: p.was,
+  stock: p.stock, max: p.max || 5, img: p.img, fallbackImg: p.fallbackImg, specs: p.specs, condition: p.condition,
+  cpuArch: p.cpuArch, ramGB: p.ramGB, ramGen: p.ramGen, gpuClass: p.gpuClass, chip: p.chip, vram: p.vram,
+  screen: p.screen, size: p.size, refresh: p.refresh, panel: p.panel, res: p.res, weight: p.weight, grade: p.grade, usedWarranty: p.usedWarranty,
+};
+export const resolve = (line) => line?.snap || findProduct(line?.id);
 export const byIds = (ids) => ids.map(findProduct).filter(Boolean);
 export const productHref = (id) => `/products/${encodeURIComponent(id)}`;
 export const categoryHref = (c) => `/products?category=${encodeURIComponent(c)}`;

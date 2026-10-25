@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import ProductArt from "@/components/ProductArt";
+import ProductImage from "@/components/ProductImage";
 import { useCart } from "@/components/CartProvider";
 import { useCompare } from "@/components/CompareProvider";
 import { brandAccent, koko, productHref, stockInfo } from "@/lib/catalog";
@@ -24,7 +24,7 @@ export default function ProductCard({ p }) {
 
   function add() {
     if (noBuy) return;
-    if (!request) cart.add(p.id);
+    if (!request) cart.add(p);
     setFlash(true);
     setTimeout(() => setFlash(false), request ? 1600 : 1200);
   }
@@ -33,7 +33,7 @@ export default function ProductCard({ p }) {
     <article className="pc">
       <div className="pc-media">
         <div className="ph">
-          {p.img ? <img src={p.img} alt={p.name} loading="lazy" /> : <ProductArt kind={p.kind} accent={p.accent || brandAccent[p.brand] || "#E31E24"} />}
+          <ProductImage p={p} />
         </div>
         {p.badge && <span className="pc-badge" style={{ background: p.badge === "Sale" ? "#181818" : "#E31E24" }}>{p.badge}</span>}
         <button className="pc-wish" onClick={() => { setWish(!wish); setPop(true); setTimeout(() => setPop(false), 420); }} aria-pressed={wish} aria-label="Add to wishlist">
@@ -43,7 +43,7 @@ export default function ProductCard({ p }) {
         </button>
         <div className="act">
           <button onClick={() => setQv(!qv)}>Quick view</button>
-          <button onClick={() => compare.toggle(p.id)} aria-pressed={cmp} style={cmp ? { borderColor: "#E31E24", background: "var(--tint)" } : undefined}>{cmp ? "Comparing" : "Compare"}</button>
+          <button onClick={() => compare.toggle(p)} aria-pressed={cmp} style={cmp ? { borderColor: "#E31E24", background: "var(--tint)" } : undefined}>{cmp ? "Comparing" : "Compare"}</button>
         </div>
         {qv && (
           <div className="qv">

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import ProductArt from "@/components/ProductArt";
+import ProductImage from "@/components/ProductImage";
 import { useCart } from "@/components/CartProvider";
-import { brandAccent, findProduct, productHref } from "@/lib/catalog";
+import { productHref, resolve } from "@/lib/catalog";
 import { lkr } from "@/lib/site";
 
 const provinces = ["Western", "Central", "Southern", "Northern", "Eastern", "North Western", "North Central", "Uva", "Sabaragamuwa"];
@@ -39,7 +39,7 @@ export default function CartPage() {
   const [pay, setPay] = useState("");
   const [payErr, setPayErr] = useState("");
 
-  const lines = cart.lines.map((l) => ({ ...l, p: findProduct(l.id) })).filter((l) => l.p);
+  const lines = cart.lines.map((l) => ({ ...l, p: resolve(l) })).filter((l) => l.p);
   const count = lines.reduce((a, l) => a + l.qty, 0);
   const sub = lines.reduce((a, l) => a + l.qty * l.p.price, 0);
   const errs = errorsFor(f);
@@ -76,7 +76,7 @@ export default function CartPage() {
               )}
               {lines.map(({ id, qty, p }) => (
                 <div key={id} className="cline">
-                  <div className="cline-art"><ProductArt kind={p.kind} accent={brandAccent[p.brand] || "#EF4444"} /></div>
+                  <div className="cline-art"><ProductImage p={p} /></div>
                   <div style={{ flex: "1 1 220px", minWidth: 0 }}>
                     <Link href={productHref(id)} style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.4 }}>{p.name}</Link>
                     <div style={{ fontSize: 12, color: "var(--mute)", marginTop: 4 }}>SKU {id} · {lkr(p.price)} each</div>

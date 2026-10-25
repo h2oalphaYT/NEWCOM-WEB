@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import ProductArt from "@/components/ProductArt";
+import ProductImage from "@/components/ProductImage";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/components/CartProvider";
 import { useCompare } from "@/components/CompareProvider";
@@ -42,7 +43,7 @@ export default function ProductDetail({ p }) {
 
   function addCart() {
     if (noBuy) return;
-    cart.add(p.id, qty);
+    cart.add(p, qty);
     setFlash(true);
     setTimeout(() => setFlash(false), 1400);
   }
@@ -60,12 +61,12 @@ export default function ProductDetail({ p }) {
       <div className="wrap pd">
         <div style={{ flex: "1 1 520px", minWidth: 0 }}>
           <button className="pd-main" onClick={() => setLb(true)} aria-label="Open image in full view">
-            <span><ProductArt kind={p.kind} accent={accent} /></span>
+            <span><ProductImage p={p} eager /></span>
           </button>
           <div className="pd-thumbs">
             {[0, 1, 2, 3].map((i) => (
               <button key={i} className="th" onClick={() => setImg(i)} aria-label={`Show image ${i + 1}`} aria-pressed={img === i} style={{ borderColor: img === i ? "#E31E24" : "var(--line)" }}>
-                <ProductArt kind={p.kind} accent={accent} />
+                <ProductImage p={p} />
               </button>
             ))}
           </div>
@@ -104,9 +105,9 @@ export default function ProductDetail({ p }) {
           </div>
           <div style={{ fontSize: 12, color: "var(--mute)", marginTop: 8 }}>Limit {p.max} per order based on sample stock.</div>
           <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 10 }}>
-            <Link href="/cart" className="btn" onClick={() => !noBuy && cart.add(p.id, qty)} style={{ flex: "1 1 140px", borderColor: "var(--ink)" }}>Buy now</Link>
+            <Link href="/cart" className="btn" onClick={() => !noBuy && cart.add(p, qty)} style={{ flex: "1 1 140px", borderColor: "var(--ink)" }}>Buy now</Link>
             <button className="btn" onClick={() => setWish(!wish)} aria-pressed={wish} style={{ flex: "1 1 140px", background: wish ? "var(--badbg)" : undefined }}>{wish ? "Saved" : "Wishlist"}</button>
-            <button className="btn" onClick={() => compare.toggle(p.id)} aria-pressed={cmp} style={{ flex: "1 1 140px", background: cmp ? "var(--tint)" : undefined }}>{cmp ? "Comparing" : "Compare"}</button>
+            <button className="btn" onClick={() => compare.toggle(p)} aria-pressed={cmp} style={{ flex: "1 1 140px", background: cmp ? "var(--tint)" : undefined }}>{cmp ? "Comparing" : "Compare"}</button>
           </div>
 
           <div className="pd-perks">
@@ -162,7 +163,7 @@ export default function ProductDetail({ p }) {
       {lb && (
         <div role="dialog" aria-modal="true" aria-label="Product image" className="lb" onClick={() => setLb(false)}>
           <button onClick={() => setLb(false)} aria-label="Close">×</button>
-          <div onClick={(e) => e.stopPropagation()}><ProductArt kind={p.kind} accent={accent} /></div>
+          <div onClick={(e) => e.stopPropagation()}><ProductImage p={p} eager /></div>
         </div>
       )}
     </>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import ProductArt from "@/components/ProductArt";
+import ProductImage from "@/components/ProductImage";
 import { useCart } from "@/components/CartProvider";
 import { useCompare } from "@/components/CompareProvider";
 import { brandAccent, compareRows, productHref } from "@/lib/catalog";
@@ -41,11 +41,11 @@ export default function ComparePage() {
                 <th scope="col"><span className="sr-only">Spec</span></th>
                 {items.map((p) => (
                   <th key={p.id} scope="col">
-                    <div className="cmp-art"><ProductArt kind={p.kind} accent={brandAccent[p.brand] || "#E31E24"} /></div>
+                    <div className="cmp-art"><ProductImage p={p} /></div>
                     <Link href={productHref(p.id)} className="cmp-name">{p.name}</Link>
                     <div className="cmp-actions">
-                      <button className="btn btn-primary" disabled={p.stock === "out"} onClick={() => cart.add(p.id)}>Add to cart</button>
-                      <button className="btn" onClick={() => toggle(p.id)}>Remove</button>
+                      <button className="btn btn-primary" disabled={p.stock === "out"} onClick={() => cart.add(p)}>Add to cart</button>
+                      <button className="btn" onClick={() => toggle(p)}>Remove</button>
                     </div>
                   </th>
                 ))}

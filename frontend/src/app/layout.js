@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { CartProvider } from "@/components/CartProvider";
 import { CompareProvider } from "@/components/CompareProvider";
 import MobileTabBar from "@/components/MobileTabBar";
+import ScrollTop from "@/components/ScrollTop";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
             <main>{children}</main>
             <Footer />
             <MobileTabBar />
+            <ScrollTop />
           </CompareProvider>
         </CartProvider>
       </body>

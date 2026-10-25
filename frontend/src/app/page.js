@@ -9,6 +9,7 @@ import Reviews from "@/components/Reviews";
 import ShowVideo from "@/components/ShowVideo";
 import { bestSellers, byIds, categoryHref, extraCategories, newArrivals } from "@/lib/catalog";
 import { site } from "@/lib/site";
+import { getItems, toProduct } from "@/lib/api";
 
 const check = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7" /></svg>;
 
@@ -67,7 +68,20 @@ function SectionHead({ eyebrow, title, accent, sub, href, link }) {
   );
 }
 
-export default function Home() {
+// newest in-stock inventory items for the home page; falls back to the sample picks if the API is down
+async function liveRows() {
+  const res = await getItems({ row_count: 40 });
+  if (!res.ok) return null;
+  const all = res.payload.map(toProduct).filter((p) => p.stock === "in" && p.price > 0);
+  const pics = all.filter((p) => p.img);
+  const pool = [...pics, ...all.filter((p) => !p.img)];
+  return pool.length >= 8 ? [pool.slice(0, 4), pool.slice(4, 8)] : null;
+}
+
+export default async function Home() {
+  const live = await liveRows();
+  const best = live ? live[0] : byIds(bestSellers);
+  const fresh = live ? live[1] : byIds(newArrivals);
   return (
     <>
       <div className="sp" aria-hidden="true" />
@@ -130,8 +144,8 @@ export default function Home() {
       </section>
 
       <section className="sec">
-        <SectionHead eyebrow="Best sellers" title="What Sri Lanka is" accent="building with." sub="Sample products and prices until the live catalogue is connected." href="/products" link="View all" />
-        <div className="pgrid">{byIds(bestSellers).map((p) => <ProductCard key={p.id} p={p} />)}</div>
+        <SectionHead eyebrow="Best sellers" title="What Sri Lanka is" accent="building with." sub={live ? "In stock now at Newcom." : "Sample products and prices until the live catalogue is connected."} href="/products" link="View all" />
+        <div className="pgrid">{best.map((p) => <ProductCard key={p.id} p={p} />)}</div>
       </section>
 
       <section className="sec showcase">
@@ -162,8 +176,8 @@ export default function Home() {
       </section>
 
       <section className="sec">
-        <SectionHead eyebrow="New arrivals" title="Just landed" accent="at Newcom." sub="Driven by the date-added field in the live catalogue. Sample items shown." />
-        <div className="pgrid">{byIds(newArrivals).map((p) => <ProductCard key={p.id} p={p} />)}</div>
+        <SectionHead eyebrow="New arrivals" title="Just landed" accent="at Newcom." sub={live ? "Fresh from our inventory." : "Sample items shown until the live catalogue is connected."} />
+        <div className="pgrid">{fresh.map((p) => <ProductCard key={p.id} p={p} />)}</div>
       </section>
 
       <section className="paths-wrap">

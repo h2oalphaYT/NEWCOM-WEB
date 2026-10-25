@@ -2,14 +2,14 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { findProduct } from "@/lib/catalog";
+import { findProduct, resolve, snapOf } from "@/lib/catalog";
 
 // Client-side cart (kept in this browser only) plus the "added to cart" toast from the mockups.
 const CartContext = createContext(null);
 const KEY = "newcom-cart";
 
 export function CartProvider({ children }) {
-  const [lines, setLines] = useState([]); // [{ id, qty }]
+  const [lines, setLines] = useState([]); // [{ id, qty, snap }]
   const [toast, setToast] = useState("");
   const [loaded, setLoaded] = useState(false);
   const timer = useRef();
@@ -17,7 +17,7 @@ export function CartProvider({ children }) {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(KEY) || "[]");
-      if (Array.isArray(saved)) setLines(saved.filter((l) => findProduct(l.id)));
+      if (Array.isArray(saved)) setLines(saved.filter((l) => resolve(l)));
     } catch {}
     setLoaded(true);
   }, []);
@@ -34,13 +34,15 @@ export function CartProvider({ children }) {
     timer.current = setTimeout(() => setToast(""), 3000);
   }
 
-  function add(id, qty = 1) {
-    const p = findProduct(id);
+  // accepts a product object (live inventory items) or an id from the sample catalogue
+  function add(item, qty = 1) {
+    const p = typeof item === "object" ? item : findProduct(item);
     if (!p || p.stock === "out") return;
+    const id = p.id;
     setLines((cur) => {
       const ex = cur.find((l) => l.id === id);
-      const next = Math.min(p.max, (ex?.qty || 0) + qty);
-      return ex ? cur.map((l) => (l.id === id ? { ...l, qty: next } : l)) : [...cur, { id, qty: next }];
+      const next = Math.min(p.max || 5, (ex?.qty || 0) + qty);
+      return ex ? cur.map((l) => (l.id === id ? { ...l, qty: next } : l)) : [...cur, { id, qty: next, snap: snapOf(p) }];
     });
     notify(`${qty > 1 ? `${qty} × ` : ""}${p.name} added.`);
   }
@@ -51,7 +53,7 @@ export function CartProvider({ children }) {
       let next = [...cur];
       ids.forEach((id) => {
         if (!findProduct(id)) return;
-        next = next.some((l) => l.id === id) ? next.map((l) => (l.id === id ? { ...l, qty: l.qty + 1 } : l)) : [...next, { id, qty: 1 }];
+        next = next.some((l) => l.id === id) ? next.map((l) => (l.id === id ? { ...l, qty: l.qty + 1 } : l)) : [...next, { id, qty: 1, snap: snapOf(findProduct(id)) }];
       });
       return next;
     });
