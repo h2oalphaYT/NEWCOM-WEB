@@ -139,9 +139,19 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$TARGET" \
             "DEPLOY_DIR='$DEPLOY_DIR' BACKEND_SERVICE='$BACKEND_SERVICE' FRONTEND_SERVICE='$FRONTEND_SERVICE' bash -s" <<'REMOTE'
           set -euo pipefail
-          # Next.js 16 needs Node 20+; use the separate Node 22 in /opt/node22 when it is installed
-          [ -x /opt/node22/bin/node ] && export PATH=/opt/node22/bin:$PATH
-          echo "node $(node -v)"
+          # Next.js 16 needs Node 20+. The frontend uses its own Node 22 in /opt/node22 (system Node is
+          # left alone). Check before changing anything, so a failed check leaves the live site as it is.
+          NODE_DIR=/opt/node22/bin
+          if [ ! -x "$NODE_DIR/node" ] || [ "$("$NODE_DIR/node" -p 'process.versions.node.split(".")[0]')" -lt 20 ]; then
+            echo "::error::Node.js 20+ not found in $NODE_DIR. Run deploy/install-node22.sh on the server (see docs/DEPLOYMENT.md)."
+            exit 1
+          fi
+          if ! systemctl show -p ExecStart --value "$FRONTEND_SERVICE" | grep -q "$NODE_DIR/"; then
+            echo "::error::$FRONTEND_SERVICE does not run $NODE_DIR/npm yet. Install deploy/systemd/webNewcom_frontend.service.d/node22.conf (see docs/DEPLOYMENT.md)."
+            exit 1
+          fi
+          export PATH="$NODE_DIR:$PATH"
+          echo "node $(node -v), npm $(npm -v)"
           STAGE=$(mktemp -d)
           tar -xzf /tmp/newcom-release.tgz -C "$STAGE"
           mkdir -p "$DEPLOY_DIR/backend" "$DEPLOY_DIR/frontend"

@@ -31,15 +31,9 @@ Pull requests to `main` run the build and tests only (no deploy). You can also r
 
 ### 1. Server
 
-Next.js 16 needs Node.js 20 or newer. Install Node 22 in its own folder so other apps on the
-server keep their Node version (Go is not needed; GitHub builds the backend):
-
-```bash
-cd /tmp && curl -fsSLO https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz
-sudo mkdir -p /opt/node22
-sudo tar -xJf node-v22.11.0-linux-x64.tar.xz -C /opt/node22 --strip-components=1
-/opt/node22/bin/node -v        # v22.11.0
-```
+Next.js 16 needs Node.js 20 or newer. The frontend gets its own Node 22 in `/opt/node22`; the
+system Node.js and other apps on the server are not changed. Go is not needed on the server.
+See "Node.js 22 for the frontend" below.
 
 ```bash
 mkdir -p /home/ubuntu/webnewcom/backend /home/ubuntu/webnewcom/frontend
@@ -84,18 +78,47 @@ Description=NEWCOM WEBSITE Frontend Service
 StartLimitIntervalSec=500
 StartLimitBurst=5
 [Service]
-ExecStart=/opt/node22/bin/npm run start
+ExecStart=/usr/bin/npm run start
 WorkingDirectory=/home/ubuntu/webnewcom/frontend
 Restart=always
 RestartSec=10
-Environment=PATH=/opt/node22/bin:/usr/bin:/usr/local/bin
+Environment=PATH=/usr/bin:/usr/local/bin
 Environment=NODE_ENV=production
 User=ubuntu
 [Install]
 WantedBy=multi-user.target
 ```
 
-`npm run start` runs `next start -p 9042` (see `frontend/package.json`).
+`npm run start` runs `next start -p 9042` (see `frontend/package.json`). The drop-in below switches
+this service to Node 22 without editing the file above.
+
+#### Node.js 22 for the frontend
+
+From the project folder on your PC, copy the installer and the drop-in to the server:
+
+```bash
+scp deploy/install-node22.sh deploy/systemd/webNewcom_frontend.service.d/node22.conf ubuntu@54.255.127.30:/tmp/
+```
+
+On the server:
+
+```bash
+bash /tmp/install-node22.sh                     # verifies the download checksum; installs to /opt/node22 only
+/opt/node22/bin/node -v                         # v22.x
+
+sudo mkdir -p /etc/systemd/system/webNewcom_frontend.service.d
+sudo install -m 644 /tmp/node22.conf /etc/systemd/system/webNewcom_frontend.service.d/node22.conf
+sudo systemctl daemon-reload
+systemctl cat webNewcom_frontend.service        # shows the original unit plus the node22.conf drop-in
+systemctl show -p ExecStart --value webNewcom_frontend.service   # path=/opt/node22/bin/npm
+sudo systemd-analyze verify webNewcom_frontend.service           # no output = valid
+sudo systemctl reset-failed webNewcom_frontend.service
+```
+
+Packages installed earlier by Node 18 are reinstalled on the next deploy if you move them aside:
+`mv /home/ubuntu/webnewcom/frontend/node_modules /home/ubuntu/webnewcom/frontend/node_modules.node18`
+(delete that folder once the site runs). The deploy refuses to start if `/opt/node22` or the
+drop-in is missing, and changes nothing on the server in that case.
 
 ```bash
 sudo systemctl daemon-reload
