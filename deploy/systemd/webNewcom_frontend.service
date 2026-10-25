@@ -1,0 +1,17 @@
+# Reference copy of the unit on the server (/etc/systemd/system/webNewcom_frontend.service),
+# used by CI to validate the node22.conf drop-in. The server's file is not changed by deploys.
+[Unit]
+Description=NEWCOM WEBSITE Frontend Service
+StartLimitIntervalSec=500
+StartLimitBurst=5
+[Service]
+ExecStart=/usr/bin/npm run start
+WorkingDirectory=/home/ubuntu/webnewcom/frontend
+Restart=always
+RestartSec=10
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=NODE_ENV=production
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

@@ -16,13 +16,22 @@ security group; only 22, 80 and 443 need to be open.
 1. Push (or merge a pull request) to `main`.
 2. GitHub Actions: `go vet` + `go test`, builds the Linux backend binaries, runs `npm ci` and
    `next build` with `NEXT_PUBLIC_API_URL=https://api.newcom.auralflix.com`.
-3. The release is copied to the server over SSH, then on the server:
-   - new `backend`, `migrate`, `createadmin`, `seedweb` binaries and `migrations/` are put in place,
-     and `./migrate` updates the NEWCOM_WEB tables (safe to re-run);
-   - `npm ci --omit=dev` runs only when `package-lock.json` changed;
-   - `.next/` and `public/` are swapped in;
-   - both services restart and a health check waits for 200 from both ports.
-4. `backend/.env`, `backend/uploads/` and `frontend/.env.production` on the server are never touched.
+3. The release is copied to the server over SSH (host key checked) and `deploy/remote-deploy.sh` runs there:
+   1. **Checks, no changes yet:** `.env` files present, passwordless sudo, both services exist, and the
+      frontend service runs npm from a Node.js >= 20.9 folder with that folder first in its `PATH`.
+      The Node folder is read from `webNewcom_frontend.service` itself, so the service is the one
+      place that decides which Node the site uses.
+   2. **Stage, no changes yet:** unpack into a temp folder next to the live one; run
+      `npm ci --omit=dev` there when `package-lock.json` changed.
+   3. **Migrate:** `./migrate` updates the NEWCOM_WEB tables (additive and re-runnable; see below).
+   4. **Backend:** keep the running binary as `backend.prev`, swap in the new one, restart
+      `webNewcom.service`, wait for `/api/health` = 200. If it fails, `backend.prev` is put back
+      and restarted, and the deploy stops before touching the frontend.
+   5. **Frontend:** move `.next`, `public`, package files (and `node_modules` if reinstalled) to
+      `*.prev`, move the new ones in, restart `webNewcom_frontend.service`, wait for 200 on 9042.
+      If it fails, the `*.prev` copies are put back and the service restarted.
+4. `backend/.env`, `backend/uploads/` and `frontend/.env.production` are never touched. No other
+   service, Caddy, the system Node.js or global settings are changed.
 
 Pull requests to `main` run the build and tests only (no deploy). You can also run
 "Build and deploy" by hand from the Actions tab.
@@ -94,6 +103,22 @@ this service to Node 22 without editing the file above.
 
 #### Node.js 22 for the frontend
 
+First look at what is there (read-only, changes nothing):
+
+```bash
+for d in /usr/bin /usr/local/bin /opt/*/bin; do [ -x "$d/node" ] && echo "$d/node $($d/node -v)"; done
+ls -ld /opt/node* 2>/dev/null
+systemctl cat webNewcom_frontend.service
+systemctl show -p ExecStart -p Environment webNewcom_frontend.service
+ls -l /etc/systemd/system/webNewcom_frontend.service.d/ 2>/dev/null
+```
+
+- If a folder such as `/opt/node-v22/bin` already has Node v22 (or any version >= 20.9), you can use
+  it instead of installing: change both `/opt/node22` paths in `node22.conf` to that folder.
+- If `/opt/node22` exists but is empty (left from an earlier attempt), the installer uses it.
+- If `/opt/node22` holds something else, the installer stops without touching it; pick another
+  folder with `NODE_DIR=/opt/node22-newcom bash /tmp/install-node22.sh` and use that path in `node22.conf`.
+
 From the project folder on your PC, copy the installer and the drop-in to the server:
 
 ```bash
@@ -115,17 +140,17 @@ sudo systemd-analyze verify webNewcom_frontend.service           # no output = v
 sudo systemctl reset-failed webNewcom_frontend.service
 ```
 
-Packages installed earlier by Node 18 are reinstalled on the next deploy if you move them aside:
-`mv /home/ubuntu/webnewcom/frontend/node_modules /home/ubuntu/webnewcom/frontend/node_modules.node18`
-(delete that folder once the site runs). The deploy refuses to start if `/opt/node22` or the
-drop-in is missing, and changes nothing on the server in that case.
+To have the next deploy reinstall the packages with Node 22, move the Node 18 ones aside (not deleted):
+`mv /home/ubuntu/webnewcom/frontend/node_modules /home/ubuntu/webnewcom/frontend/node_modules.node18`.
+Remove `node_modules.node18` yourself once the site runs. If Node 22 or the drop-in is missing,
+the deploy stops at its first check and changes nothing on the server.
 
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable webNewcom.service webNewcom_frontend.service
 ```
 
-Caddy (`/etc/caddy/Caddyfile`), then `sudo systemctl reload caddy`:
+Caddy (`/etc/caddy/Caddyfile`) is already set up as below; deploys never change it:
 
 ```
 https://api.newcom.auralflix.com {
@@ -165,7 +190,12 @@ Repository → Settings → Secrets and variables → Actions:
 | `SSH_USER` | `ubuntu` |
 | `SSH_PRIVATE_KEY` | the whole contents of `newcom_deploy` (the private key file) |
 | `SSH_PORT` | optional, default 22 |
-| `SSH_KNOWN_HOSTS` | optional; output of `ssh-keyscan 54.255.127.30` to pin the host key |
+| `SSH_KNOWN_HOSTS` | recommended; pins the server's host key (see below). Without it the key is trusted on first contact and the run shows a warning |
+
+To make `SSH_KNOWN_HOSTS`, run on your PC `ssh-keyscan -t ed25519 54.255.127.30` and check that
+its fingerprint matches the server's own (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the
+server, compared with `ssh-keyscan -t ed25519 54.255.127.30 | ssh-keygen -lf -` on your PC). Paste the
+`ssh-keyscan` line as the secret.
 
 Variables (optional, only if you use different names):
 `BACKEND_SERVICE` (default `webNewcom.service`), `FRONTEND_SERVICE` (default `webNewcom_frontend.service`),
@@ -184,6 +214,27 @@ Push to `main` (or Actions → Build and deploy → Run workflow). When it is gr
   `cd /home/ubuntu/webnewcom/backend && ./createadmin -email you@newcom.lk -name "Your Name"`,
 - optional starter content: `./seedweb`.
 
+## Rollback and database migrations
+
+- Each deploy keeps the previous version next to the live one: `backend/backend.prev`,
+  `backend/migrations.prev`, `frontend/.next.prev`, `frontend/public.prev` and the `*.prev` package
+  files. A failed health check restores them automatically.
+- Manual rollback of the last deploy (only the two NEWCOM services are restarted):
+
+  ```bash
+  cd /home/ubuntu/webnewcom/backend && cp -p backend.prev backend && sudo systemctl restart webNewcom.service
+  cd /home/ubuntu/webnewcom/frontend
+  for x in .next public package.json package-lock.json next.config.mjs; do
+    if [ -e "$x.prev" ]; then rm -rf "$x" && mv "$x.prev" "$x"; fi
+  done
+  sudo systemctl restart webNewcom_frontend.service
+  ```
+
+- **Migrations are not rolled back.** `migrations/*.sql` only add tables, columns and indexes
+  (`IF ... IS NULL` guards), so the previous backend keeps working with the new schema. Any future
+  migration that drops, renames or rewrites data must not go out through this pipeline unreviewed:
+  take a database backup first and release it on its own.
+
 ## Troubleshooting
 
 ```bash
@@ -194,6 +245,8 @@ sudo journalctl -u caddy -n 50 --no-pager
 
 - **Deploy fails at "Upload release":** check `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` and that the
   public key is in `~/.ssh/authorized_keys`.
+- **"still runs the system npm" / "Node ... not found" / "PATH must start with":** the Node 22 install
+  or the `node22.conf` drop-in is missing or points at another folder; see "Node.js 22 for the frontend".
 - **Deploy fails at migrate:** the server can't reach SQL Server, or `backend/.env` is missing.
 - **Health check fails:** read the journal lines printed in the job log.
 - **Admin sign-in loops back to the login page:** `WEB_ORIGIN` in `backend/.env` must be exactly
