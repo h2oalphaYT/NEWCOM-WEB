@@ -1046,6 +1046,12 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 
 @media (max-width: 899px) { .fscene { padding: 16px 8px 0; } }
 .ftr { color: #C9C9D1; } /* footer links stay readable in both themes */
+.fbrands { max-width: 1280px; margin: 8px auto 0; padding: 22px 32px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px 30px; border-top: 1px solid #1E1E26; border-bottom: 1px solid #1E1E26; }
+.fbrand { display: inline-flex; align-items: center; color: #8E8E9A; transition: color .35s, transform .4s var(--ease-out); }
+.fbrand svg { width: 30px; height: 30px; fill: currentColor; }
+.fbrand.word { font-weight: 800; font-size: 15px; letter-spacing: .04em; }
+.fbrand:hover { color: var(--bc, #fff); transform: translateY(-2px); }
+@media (max-width: 899px) { .fbrands { padding: 18px 16px; gap: 12px 22px; } .fbrand svg { width: 24px; height: 24px; } }
 @media (prefers-reduced-motion: reduce) {
   .fscene.on * { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
 }
