@@ -139,6 +139,9 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$TARGET" \
             "DEPLOY_DIR='$DEPLOY_DIR' BACKEND_SERVICE='$BACKEND_SERVICE' FRONTEND_SERVICE='$FRONTEND_SERVICE' bash -s" <<'REMOTE'
           set -euo pipefail
+          # Next.js 16 needs Node 20+; use the separate Node 22 in /opt/node22 when it is installed
+          [ -x /opt/node22/bin/node ] && export PATH=/opt/node22/bin:$PATH
+          echo "node $(node -v)"
           STAGE=$(mktemp -d)
           tar -xzf /tmp/newcom-release.tgz -C "$STAGE"
           mkdir -p "$DEPLOY_DIR/backend" "$DEPLOY_DIR/frontend"
@@ -165,6 +168,7 @@ jobs:
           [ -d "$F/public" ] && mv "$F/public" "$F/public.old"
           mv "$F/.next.new" "$F/.next" && mv "$F/public.new" "$F/public"
 
+          sudo systemctl reset-failed "$BACKEND_SERVICE" "$FRONTEND_SERVICE" || true
           sudo systemctl restart "$BACKEND_SERVICE"
           sudo systemctl restart "$FRONTEND_SERVICE"
           rm -rf "$STAGE" /tmp/newcom-release.tgz "$F/.next.old" "$F/public.old"

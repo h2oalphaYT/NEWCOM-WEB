@@ -31,7 +31,15 @@ Pull requests to `main` run the build and tests only (no deploy). You can also r
 
 ### 1. Server
 
-Node.js (for `npm`) must be installed; Go is not needed on the server (binaries are built by GitHub).
+Next.js 16 needs Node.js 20 or newer. Install Node 22 in its own folder so other apps on the
+server keep their Node version (Go is not needed; GitHub builds the backend):
+
+```bash
+cd /tmp && curl -fsSLO https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz
+sudo mkdir -p /opt/node22
+sudo tar -xJf node-v22.11.0-linux-x64.tar.xz -C /opt/node22 --strip-components=1
+/opt/node22/bin/node -v        # v22.11.0
+```
 
 ```bash
 mkdir -p /home/ubuntu/webnewcom/backend /home/ubuntu/webnewcom/frontend
@@ -76,11 +84,11 @@ Description=NEWCOM WEBSITE Frontend Service
 StartLimitIntervalSec=500
 StartLimitBurst=5
 [Service]
-ExecStart=/usr/bin/npm run start
+ExecStart=/opt/node22/bin/npm run start
 WorkingDirectory=/home/ubuntu/webnewcom/frontend
 Restart=always
 RestartSec=10
-Environment=PATH=/usr/bin:/usr/local/bin
+Environment=PATH=/opt/node22/bin:/usr/bin:/usr/local/bin
 Environment=NODE_ENV=production
 User=ubuntu
 [Install]
